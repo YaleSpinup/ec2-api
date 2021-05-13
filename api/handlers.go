@@ -38,17 +38,30 @@ func (s *server) PingHandler(w http.ResponseWriter, r *http.Request) {
 func (s *server) VersionHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Content-Type", "application/json")
+	handleResponseOk(w, s.version)
+}
 
-	data, err := json.Marshal(s.version)
+// NotImplemented handler is a temporary handler for endpoints not yet implemented
+func NotImplemented(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusNotImplemented)
+	w.Write([]byte("Not Implemented"))
+}
+
+// handleResponseOk handles the standard response
+func handleResponseOk(w http.ResponseWriter, response interface{}) {
+	j, err := json.Marshal(response)
 	if err != nil {
+		log.Errorf("cannot marshal response (%v) into JSON: %s", response, err)
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte{})
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	w.Write(j)
 }
 
 // handleError handles standard apierror return codes
