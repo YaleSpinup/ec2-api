@@ -17,7 +17,7 @@ func notTerminated() *ec2.Filter {
 				"pending",
 				"running",
 				"shutting-down",
-				"stoppng",
+				"stopping",
 				"stopped",
 			},
 		),

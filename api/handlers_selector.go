@@ -52,10 +52,9 @@ func (s *server) InstanceSelectorHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	instanceSelector := selector.New(session.Session)
-
 	out, err := instanceSelector.Filter(filters)
 	if err != nil {
-		fmt.Printf("Oh no, there was an error :( %v", err)
+		handleError(w, apierror.New(apierror.ErrBadRequest, "failed to filter instances", err))
 		return
 	}
 

@@ -7,6 +7,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// ErrCode converts ec2 errors to apierror errors
+// TODO fill out with EC2 standard error types
 func ErrCode(msg string, err error) error {
 	if aerr, ok := errors.Cause(err).(awserr.Error); ok {
 		switch aerr.Code() {
