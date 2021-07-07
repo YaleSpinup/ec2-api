@@ -9,41 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func notTerminated() *ec2.Filter {
-	return &ec2.Filter{
-		Name: aws.String("instance-state-name"),
-		Values: aws.StringSlice(
-			[]string{
-				"pending",
-				"running",
-				"shutting-down",
-				"stopping",
-				"stopped",
-			},
-		),
-	}
-}
-
-func inOrg(org string) *ec2.Filter {
-	return &ec2.Filter{
-		// TODO: switch to "tag:spinup:org"
-		// Name: aws.String("tag:spinup:org"),
-		Name: aws.String("tag:yale:org"),
-		Values: aws.StringSlice(
-			[]string{org},
-		),
-	}
-}
-
-func withInstanceId(id string) *ec2.Filter {
-	return &ec2.Filter{
-		Name: aws.String("tag:spinup:instanceid"),
-		Values: aws.StringSlice(
-			[]string{id},
-		),
-	}
-}
-
 // ListInstances lists the instances that are not terminated and not spot
 func (e *Ec2) ListInstances(ctx context.Context, org string, per int64, next *string) ([]map[string]*string, *string, error) {
 	log.Infof("listing ec2 instances")
@@ -102,9 +67,6 @@ func (e *Ec2) GetInstance(ctx context.Context, id string) (*ec2.Instance, error)
 
 	out, err := e.Service.DescribeInstancesWithContext(ctx, &ec2.DescribeInstancesInput{
 		InstanceIds: aws.StringSlice([]string{id}),
-		Filters: []*ec2.Filter{
-			inOrg(e.org),
-		},
 	})
 
 	if err != nil {
@@ -133,7 +95,6 @@ func (e *Ec2) ListInstanceVolumes(ctx context.Context, id string) ([]string, err
 	input := ec2.DescribeVolumesInput{
 		Filters: []*ec2.Filter{
 			withInstanceId(id),
-			inOrg(e.org),
 		},
 		MaxResults: aws.Int64(1000),
 	}
@@ -174,7 +135,6 @@ func (e *Ec2) ListInstanceSnapshots(ctx context.Context, id string) ([]string, e
 	input := ec2.DescribeSnapshotsInput{
 		Filters: []*ec2.Filter{
 			withInstanceId(id),
-			inOrg(e.org),
 		},
 		MaxResults: aws.Int64(1000),
 	}
@@ -182,7 +142,7 @@ func (e *Ec2) ListInstanceSnapshots(ctx context.Context, id string) ([]string, e
 	for {
 		out, err := e.Service.DescribeSnapshotsWithContext(ctx, &input)
 		if err != nil {
-			return nil, ErrCode("describing snapshots for volumes", err)
+			return nil, ErrCode("describing snapshots for volumes of an instance", err)
 		}
 
 		log.Debugf("got describe snapshots output %+v", out)
@@ -212,7 +172,6 @@ func (e *Ec2) GetInstanceVolume(ctx context.Context, id, volid string) (*ec2.Vol
 	out, err := e.Service.DescribeVolumesWithContext(ctx, &ec2.DescribeVolumesInput{
 		VolumeIds: aws.StringSlice([]string{volid}),
 		Filters: []*ec2.Filter{
-			inOrg(e.org),
 			withInstanceId(id),
 		},
 	})

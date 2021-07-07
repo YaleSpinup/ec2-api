@@ -26,6 +26,8 @@ import (
 
 // Config is representation of the configuration data
 type Config struct {
+	AccountsMap   map[string]string
+	ProxyBackend  *ProxyBackend
 	ListenAddress string
 	Account       Account
 	Token         string
@@ -36,19 +38,25 @@ type Config struct {
 
 // Account is the configuration for an individual account
 type Account struct {
-	Endpoint	string
-	ExternalID	string
-	Akid		string
-	Secret		string
-	Region		string
-	Role		string
+	Endpoint   string
+	ExternalID string
+	Akid       string
+	Secret     string
+	Region     string
+	Role       string
+}
+
+type ProxyBackend struct {
+	BaseUrl       string
+	Token         string
+	BackendPrefix string
 }
 
 // Version carries around the API version information
 type Version struct {
-	Version           string
-	BuildStamp        string
-	GitHash           string
+	Version    string
+	BuildStamp string
+	GitHash    string
 }
 
 // ReadConfig decodes the configuration from an io Reader
