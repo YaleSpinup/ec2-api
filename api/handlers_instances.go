@@ -14,7 +14,7 @@ import (
 func (s *server) InstanceListHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
-	account := vars["account"]
+	account := s.mapAccountNumber(vars["account"])
 
 	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
 
@@ -53,12 +53,15 @@ func (s *server) InstanceListHandler(w http.ResponseWriter, r *http.Request) {
 		ec2.WithOrg(s.org),
 	)
 
-	out, next, err := service.ListInstances(r.Context(), s.org, int64(perPage), pageToken)
+	// TODO an api should be for one org, currently we need to suppor the entire acocunt
+	out, next, err := service.ListInstances(r.Context(), "", int64(perPage), pageToken)
+	// out, next, err := service.ListInstances(r.Context(), s.org, int64(perPage), pageToken)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
+	w.Header().Set("X-Items", strconv.Itoa(len(out)))
 	if next != nil {
 		w.Header().Set("X-Per-Page", strconv.Itoa(perPage))
 		w.Header().Set("X-Next-Token", aws.StringValue(next))
@@ -70,7 +73,7 @@ func (s *server) InstanceListHandler(w http.ResponseWriter, r *http.Request) {
 func (s *server) InstanceGetHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
-	account := vars["account"]
+	account := s.mapAccountNumber(vars["account"])
 	id := vars["id"]
 
 	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
@@ -105,7 +108,7 @@ func (s *server) InstanceGetHandler(w http.ResponseWriter, r *http.Request) {
 func (s *server) InstanceVolumesHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
-	account := vars["account"]
+	account := s.mapAccountNumber(vars["account"])
 	id := vars["id"]
 	vid := vars["vid"]
 
@@ -150,7 +153,7 @@ func (s *server) InstanceVolumesHandler(w http.ResponseWriter, r *http.Request) 
 func (s *server) InstanceListSnapshotsHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
-	account := vars["account"]
+	account := s.mapAccountNumber(vars["account"])
 	id := vars["id"]
 
 	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)

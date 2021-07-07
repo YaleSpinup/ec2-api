@@ -49,12 +49,20 @@ type apiVersion struct {
 	BuildStamp string `json:"buildstamp"`
 }
 
+type proxyBackend struct {
+	baseUrl string
+	token   string
+	prefix  string
+}
+
 type server struct {
 	router       *mux.Router
 	version      *apiVersion
 	context      context.Context
 	session      session.Session
 	sessionCache *cache.Cache
+	backend      *proxyBackend
+	accountsMap  map[string]string
 	orgPolicy    string
 	org          string
 }
@@ -74,6 +82,7 @@ func NewServer(config common.Config) error {
 		context:      ctx,
 		org:          config.Org,
 		sessionCache: cache.New(600*time.Second, 900*time.Second),
+		accountsMap:  config.AccountsMap,
 	}
 
 	s.version = &apiVersion{
@@ -87,6 +96,15 @@ func NewServer(config common.Config) error {
 		return err
 	}
 	s.orgPolicy = orgPolicy
+
+	if b := config.ProxyBackend; b != nil {
+		log.Debugf("configuring proxy backend %s", b.BaseUrl)
+		s.backend = &proxyBackend{
+			baseUrl: b.BaseUrl,
+			token:   b.Token,
+			prefix:  b.BackendPrefix,
+		}
+	}
 
 	// Create a new session used for authentication and assuming cross account roles
 	log.Debugf("Creating new session with key '%s' in region '%s'", config.Account.Akid, config.Account.Region)
@@ -113,8 +131,8 @@ func NewServer(config common.Config) error {
 	srv := &http.Server{
 		Handler:      handler,
 		Addr:         config.ListenAddress,
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		ReadTimeout:  30 * time.Second,
 	}
 
 	log.Infof("Starting listener on %s", config.ListenAddress)
@@ -225,4 +243,12 @@ func orgTagAccessPolicy(org string) (string, error) {
 	}
 
 	return string(j), nil
+}
+
+// if we have an entry for the account name, return the associated account number
+func (s *server) mapAccountNumber(name string) string {
+	if a, ok := s.accountsMap[name]; ok {
+		return a
+	}
+	return name
 }

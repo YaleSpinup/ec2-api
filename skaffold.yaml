@@ -19,7 +19,7 @@ deploy:
       - k8s/k8s-*
   helm:
     releases:
-    - name: ec2-api
+    - name: ec2api
       chartPath: k8s/api
       artifactOverrides:
         image: hub.docker.com/yaleits/ec2-api
