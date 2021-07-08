@@ -7,6 +7,11 @@ import (
 // AccountsHandler responds to account list requests
 func (s *server) AccountsHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
-	w.WriteHeader(http.StatusNotImplemented)
-	w.Write([]byte("Not Implemented"))
+
+	accounts := []string{}
+	for k := range s.accountsMap {
+		accounts = append(accounts, k)
+	}
+
+	handleResponseOk(w, accounts)
 }
