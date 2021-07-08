@@ -64,9 +64,9 @@ func main() {
 	}
 
 	config.Version = common.Version{
-		Version:           Version,
-		BuildStamp:        Buildstamp,
-		GitHash:           Githash,
+		Version:    Version,
+		BuildStamp: Buildstamp,
+		GitHash:    Githash,
 	}
 
 	// Set the loglevel, info if it's unset

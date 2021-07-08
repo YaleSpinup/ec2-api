@@ -28,6 +28,7 @@ func (e *Ec2) ListImages(ctx context.Context, org string) ([]map[string]*string,
 	}
 
 	out, err := e.Service.DescribeImagesWithContext(ctx, &ec2.DescribeImagesInput{
+		Owners:  aws.StringSlice([]string{"self"}),
 		Filters: filters,
 	})
 	if err != nil {
