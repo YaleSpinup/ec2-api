@@ -116,9 +116,9 @@ func NewServer(config common.Config) error {
 	)
 
 	publicURLs := map[string]string{
-		"/v1/ec2/ping":    "public",
-		"/v1/ec2/version": "public",
-		"/v1/ec2/metrics": "public",
+		"/v2/ec2/ping":    "public",
+		"/v2/ec2/version": "public",
+		"/v2/ec2/metrics": "public",
 	}
 
 	// load routes

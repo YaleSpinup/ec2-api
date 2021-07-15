@@ -7,6 +7,14 @@
     "externalId": "{{ .external_id }}",
     "role": "{{ .cross_account_role }}"
   },
+  "accountsMap": {
+    "spinup": "{{ .spinup_acount_id }}",
+    "spinupsec": "{{ .spinupsec_acount_id }}"
+  },
+  "proxyBackend": {
+    "baseUrl": "{{ .proxy_base_url }}",
+    "token": "{{ .proxy_token }}"
+  },
   "token": "{{ .api_token }}",
   "logLevel": "{{ .log_level }}",
   "org": "{{ .spinup_org }}"
