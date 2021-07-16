@@ -131,8 +131,8 @@ func NewServer(config common.Config) error {
 	srv := &http.Server{
 		Handler:      handler,
 		Addr:         config.ListenAddress,
-		WriteTimeout: 30 * time.Second,
-		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 90 * time.Second,
+		ReadTimeout:  90 * time.Second,
 	}
 
 	log.Infof("Starting listener on %s", config.ListenAddress)
