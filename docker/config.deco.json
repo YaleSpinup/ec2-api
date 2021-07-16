@@ -13,6 +13,7 @@
   },
   "proxyBackend": {
     "baseUrl": "{{ .proxy_base_url }}",
+    "backendPrefix": "{{ .proxy_backend_prefix }}",
     "token": "{{ .proxy_token }}"
   },
   "token": "{{ .api_token }}",
