@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -242,21 +243,22 @@ func toEC2SnapshotResponse(snapshot *ec2.Snapshot) *Ec2SnapshotResponse {
 }
 
 type Ec2ImageResponse struct {
-	Architecture   string                             `json:"architecture"`
-	CreatedAt      string                             `json:"created_at"`
-	CreatedBy      string                             `json:"created_by"`
-	Description    string                             `json:"description"`
-	ID             string                             `json:"id"`
-	Name           string                             `json:"name"`
-	Public         bool                               `json:"public"`
-	RootDeviceName string                             `json:"root_device_name"`
-	RootDeviceType string                             `json:"root_device_type"`
-	State          string                             `json:"state"`
-	Tags           []map[string]string                `json:"tags"`
-	Type           string                             `json:"type"`
-	Volumes        map[string]*Ec2ImageVolumeResponse `json:"volumes"`
+	Architecture   string              `json:"architecture"`
+	CreatedAt      string              `json:"created_at"`
+	CreatedBy      string              `json:"created_by"`
+	Description    string              `json:"description"`
+	ID             string              `json:"id"`
+	Name           string              `json:"name"`
+	Public         bool                `json:"public"`
+	RootDeviceName string              `json:"root_device_name"`
+	RootDeviceType string              `json:"root_device_type"`
+	State          string              `json:"state"`
+	Tags           []map[string]string `json:"tags"`
+	Type           string              `json:"type"`
+	Volumes        Ec2ImageVolumeMap   `json:"volumes"`
 }
 
+type Ec2ImageVolumeMap map[string]*Ec2ImageVolumeResponse
 type Ec2ImageVolumeResponse struct {
 	DeleteOnTermination bool   `json:"delete_on_termination"`
 	SnapshotId          string `json:"snapshot_id"`
@@ -325,4 +327,18 @@ func toEc2ImageResponse(image *ec2.Image) *Ec2ImageResponse {
 		Type:           aws.StringValue(image.ImageType),
 		Volumes:        volumes,
 	}
+}
+
+// MarshalJSON for Ec2ImageVolumeMap to return an empty object (`{}`) for nil values (instead of `null`)
+func (e *Ec2ImageVolumeMap) MarshalJSON() ([]byte, error) {
+	output := map[string]interface{}{}
+	for k, v := range *e {
+		if v == nil {
+			output[k] = struct{}{}
+			continue
+		}
+		output[k] = v
+	}
+
+	return json.Marshal(&output)
 }
