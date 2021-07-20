@@ -23,7 +23,7 @@ import (
 )
 
 func (s *server) routes() {
-	api := s.router.PathPrefix("/v1/ec2").Subrouter()
+	api := s.router.PathPrefix("/v2/ec2").Subrouter()
 	api.HandleFunc("/ping", s.PingHandler).Methods(http.MethodGet)
 	api.HandleFunc("/version", s.VersionHandler).Methods(http.MethodGet)
 	api.Handle("/metrics", promhttp.Handler()).Methods(http.MethodGet)

@@ -14,7 +14,7 @@ import (
 func (s *server) ProxyRequestHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("Method: %s", r.Method)
 
-	url := strings.Replace(r.URL.String(), "/v1/ec2", s.backend.prefix, 1)
+	url := strings.Replace(r.URL.String(), "/v2/ec2", s.backend.prefix, 1)
 
 	log.Infof("proxying request: %s to %s", r.URL, url)
 

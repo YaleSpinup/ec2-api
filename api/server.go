@@ -116,9 +116,9 @@ func NewServer(config common.Config) error {
 	)
 
 	publicURLs := map[string]string{
-		"/v1/ec2/ping":    "public",
-		"/v1/ec2/version": "public",
-		"/v1/ec2/metrics": "public",
+		"/v2/ec2/ping":    "public",
+		"/v2/ec2/version": "public",
+		"/v2/ec2/metrics": "public",
 	}
 
 	// load routes
@@ -131,8 +131,8 @@ func NewServer(config common.Config) error {
 	srv := &http.Server{
 		Handler:      handler,
 		Addr:         config.ListenAddress,
-		WriteTimeout: 30 * time.Second,
-		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 90 * time.Second,
+		ReadTimeout:  90 * time.Second,
 	}
 
 	log.Infof("Starting listener on %s", config.ListenAddress)
