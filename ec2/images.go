@@ -10,7 +10,7 @@ import (
 )
 
 func (e *Ec2) ListImages(ctx context.Context, org, name string) ([]map[string]*string, error) {
-	log.Infof("listing ec2 images")
+	log.Infof("listing ec2 images (name: '%s', org: '%s')", name, org)
 
 	filters := []*ec2.Filter{
 		{
