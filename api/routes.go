@@ -63,6 +63,7 @@ func (s *server) routes() {
 	api.HandleFunc("/{account}/snapshots", s.ProxyRequestHandler).Methods(http.MethodPost)
 	api.HandleFunc("/{account}/images", s.ProxyRequestHandler).Methods(http.MethodPost)
 
+	api.HandleFunc("/{account}/images/{id}/tags", s.ProxyRequestHandler).Methods(http.MethodPut)
 	api.HandleFunc("/{account}/instances/{id}", s.ProxyRequestHandler).Methods(http.MethodPut)
 	api.HandleFunc("/{account}/instances/{id}/power", s.ProxyRequestHandler).Methods(http.MethodPut)
 	api.HandleFunc("/{account}/instances/{id}/ssm/command", s.ProxyRequestHandler).Methods(http.MethodPut)
@@ -76,7 +77,9 @@ func (s *server) routes() {
 
 	api.HandleFunc("/{account}/instances/{id}", s.ProxyRequestHandler).Methods(http.MethodDelete)
 	api.HandleFunc("/{account}/instances/{id}/volumes/{vid}", s.ProxyRequestHandler).Methods(http.MethodDelete)
+	api.HandleFunc("/{account}/instanceprofiles/{name}", s.ProxyRequestHandler).Methods(http.MethodDelete)
 	api.HandleFunc("/{account}/sgs/{id}", s.ProxyRequestHandler).Methods(http.MethodDelete)
 	api.HandleFunc("/{account}/volumes/{id}", s.ProxyRequestHandler).Methods(http.MethodDelete)
 	api.HandleFunc("/{account}/snapshots/{id}", s.ProxyRequestHandler).Methods(http.MethodDelete)
+	api.HandleFunc("/{account}/images/{id}", s.ProxyRequestHandler).Methods(http.MethodDelete)
 }
