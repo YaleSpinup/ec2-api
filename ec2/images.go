@@ -9,7 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (e *Ec2) ListImages(ctx context.Context, org string) ([]map[string]*string, error) {
+func (e *Ec2) ListImages(ctx context.Context, org, name string) ([]map[string]*string, error) {
 	log.Infof("listing ec2 images")
 
 	filters := []*ec2.Filter{
@@ -25,6 +25,13 @@ func (e *Ec2) ListImages(ctx context.Context, org string) ([]map[string]*string,
 
 	if org != "" {
 		filters = append(filters, inOrg(org))
+	}
+
+	if name != "" {
+		filters = append(filters, &ec2.Filter{
+			Name:   aws.String("name"),
+			Values: aws.StringSlice([]string{name}),
+		})
 	}
 
 	out, err := e.Service.DescribeImagesWithContext(ctx, &ec2.DescribeImagesInput{

@@ -70,7 +70,7 @@ func (s *server) assumeRole(ctx context.Context, externalId, roleArn, inlinePoli
 	item, expire, found := s.sessionCache.GetWithExpiration(cacheKey)
 	if found {
 		if sess, ok := item.(*session.Session); ok {
-			log.Debugf("using cached session (expire: %s)", expire.String())
+			log.Infof("using cached session (expire: %s)", expire.String())
 			return sess, nil
 		}
 	}

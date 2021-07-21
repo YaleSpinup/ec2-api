@@ -16,7 +16,7 @@ import (
 var images = []*ec2.Image{
 	{
 		ImageId: aws.String("i-00000001"),
-		Name:    aws.String("Image 00000001"),
+		Name:    aws.String("Image_00000001"),
 		OwnerId: aws.String("self"),
 		Public:  aws.Bool(false),
 		State:   aws.String("available"),
@@ -29,7 +29,7 @@ var images = []*ec2.Image{
 	},
 	{
 		ImageId: aws.String("i-00000002"),
-		Name:    aws.String("Image 00000002"),
+		Name:    aws.String("Image_00000002"),
 		OwnerId: aws.String("self"),
 		Public:  aws.Bool(false),
 		State:   aws.String("available"),
@@ -42,7 +42,7 @@ var images = []*ec2.Image{
 	},
 	{
 		ImageId: aws.String("i-00000003"),
-		Name:    aws.String("Image 00000003"),
+		Name:    aws.String("Image_00000003"),
 		OwnerId: aws.String("self"),
 		Public:  aws.Bool(false),
 		State:   aws.String("available"),
@@ -55,7 +55,7 @@ var images = []*ec2.Image{
 	},
 	{
 		ImageId: aws.String("i-00000004"),
-		Name:    aws.String("Image 00000004"),
+		Name:    aws.String("Image_00000004"),
 		OwnerId: aws.String("self"),
 		Public:  aws.Bool(false),
 		State:   aws.String("available"),
@@ -68,7 +68,7 @@ var images = []*ec2.Image{
 	},
 	{
 		ImageId: aws.String("i-00000005"),
-		Name:    aws.String("Image 00000005"),
+		Name:    aws.String("Image_00000005"),
 		OwnerId: aws.String("aws"),
 		Public:  aws.Bool(false),
 		State:   aws.String("available"),
@@ -81,7 +81,7 @@ var images = []*ec2.Image{
 	},
 	{
 		ImageId: aws.String("i-00000006"),
-		Name:    aws.String("Image 00000006"),
+		Name:    aws.String("Image_00000006"),
 		OwnerId: aws.String("self"),
 		Public:  aws.Bool(true),
 		State:   aws.String("available"),
@@ -94,7 +94,7 @@ var images = []*ec2.Image{
 	},
 	{
 		ImageId: aws.String("i-00000007"),
-		Name:    aws.String("Image 00000007"),
+		Name:    aws.String("Image_00000007"),
 		OwnerId: aws.String("self"),
 		Public:  aws.Bool(false),
 		State:   aws.String("pending"),
@@ -155,6 +155,18 @@ func (m mockEC2Client) DescribeImagesWithContext(ctx context.Context, input *ec2
 				m.t.Logf("checking passed image filter %+v", f)
 
 				switch aws.StringValue(f.Name) {
+				case "name":
+					var filterMatch bool
+					for _, v := range f.Values {
+						if aws.StringValue(v) == aws.StringValue(i.Name) {
+							filterMatch = true
+							break
+						}
+					}
+
+					if !filterMatch {
+						match = false
+					}
 				case "is-public":
 					var filterMatch bool
 					for _, v := range f.Values {
@@ -231,8 +243,9 @@ func TestEc2_ListImages(t *testing.T) {
 		org             string
 	}
 	type args struct {
-		ctx context.Context
-		org string
+		ctx  context.Context
+		org  string
+		name string
 	}
 	tests := []struct {
 		name    string
@@ -251,19 +264,19 @@ func TestEc2_ListImages(t *testing.T) {
 			want: []map[string]*string{
 				{
 					"id":   aws.String("i-00000001"),
-					"name": aws.String("Image 00000001"),
+					"name": aws.String("Image_00000001"),
 				},
 				{
 					"id":   aws.String("i-00000002"),
-					"name": aws.String("Image 00000002"),
+					"name": aws.String("Image_00000002"),
 				},
 				{
 					"id":   aws.String("i-00000003"),
-					"name": aws.String("Image 00000003"),
+					"name": aws.String("Image_00000003"),
 				},
 				{
 					"id":   aws.String("i-00000004"),
-					"name": aws.String("Image 00000004"),
+					"name": aws.String("Image_00000004"),
 				},
 			},
 		},
@@ -277,11 +290,40 @@ func TestEc2_ListImages(t *testing.T) {
 			want: []map[string]*string{
 				{
 					"id":   aws.String("i-00000001"),
-					"name": aws.String("Image 00000001"),
+					"name": aws.String("Image_00000001"),
 				},
 				{
 					"id":   aws.String("i-00000002"),
-					"name": aws.String("Image 00000002"),
+					"name": aws.String("Image_00000002"),
+				},
+			},
+		},
+		{
+			name:   "name Image_00000002",
+			fields: fields{Service: newmockEC2Client(t, nil)},
+			args: args{
+				ctx:  context.TODO(),
+				name: "Image_00000002",
+			},
+			want: []map[string]*string{
+				{
+					"id":   aws.String("i-00000002"),
+					"name": aws.String("Image_00000002"),
+				},
+			},
+		},
+		{
+			name:   "dev org with name Image_00000001",
+			fields: fields{Service: newmockEC2Client(t, nil)},
+			args: args{
+				ctx:  context.TODO(),
+				org:  "dev",
+				name: "Image_00000001",
+			},
+			want: []map[string]*string{
+				{
+					"id":   aws.String("i-00000001"),
+					"name": aws.String("Image_00000001"),
 				},
 			},
 		},
@@ -296,7 +338,7 @@ func TestEc2_ListImages(t *testing.T) {
 				DefaultSubnets:  tt.fields.DefaultSubnets,
 				org:             tt.fields.org,
 			}
-			got, err := e.ListImages(tt.args.ctx, tt.args.org)
+			got, err := e.ListImages(tt.args.ctx, tt.args.org, tt.args.name)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Ec2.ListImages() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -353,7 +395,7 @@ func TestEc2_GetImage(t *testing.T) {
 			want: []*ec2.Image{
 				{
 					ImageId: aws.String("i-00000007"),
-					Name:    aws.String("Image 00000007"),
+					Name:    aws.String("Image_00000007"),
 					OwnerId: aws.String("self"),
 					Public:  aws.Bool(false),
 					State:   aws.String("pending"),
@@ -389,7 +431,7 @@ func TestEc2_GetImage(t *testing.T) {
 			want: []*ec2.Image{
 				{
 					ImageId: aws.String("i-00000002"),
-					Name:    aws.String("Image 00000002"),
+					Name:    aws.String("Image_00000002"),
 					OwnerId: aws.String("self"),
 					Public:  aws.Bool(false),
 					State:   aws.String("available"),
@@ -402,7 +444,7 @@ func TestEc2_GetImage(t *testing.T) {
 				},
 				{
 					ImageId: aws.String("i-00000003"),
-					Name:    aws.String("Image 00000003"),
+					Name:    aws.String("Image_00000003"),
 					OwnerId: aws.String("self"),
 					Public:  aws.Bool(false),
 					State:   aws.String("available"),
@@ -415,7 +457,7 @@ func TestEc2_GetImage(t *testing.T) {
 				},
 				{
 					ImageId: aws.String("i-00000004"),
-					Name:    aws.String("Image 00000004"),
+					Name:    aws.String("Image_00000004"),
 					OwnerId: aws.String("self"),
 					Public:  aws.Bool(false),
 					State:   aws.String("available"),
@@ -442,7 +484,7 @@ func TestEc2_GetImage(t *testing.T) {
 			want: []*ec2.Image{
 				{
 					ImageId: aws.String("i-00000003"),
-					Name:    aws.String("Image 00000003"),
+					Name:    aws.String("Image_00000003"),
 					OwnerId: aws.String("self"),
 					Public:  aws.Bool(false),
 					State:   aws.String("available"),
@@ -455,7 +497,7 @@ func TestEc2_GetImage(t *testing.T) {
 				},
 				{
 					ImageId: aws.String("i-00000004"),
-					Name:    aws.String("Image 00000004"),
+					Name:    aws.String("Image_00000004"),
 					OwnerId: aws.String("self"),
 					Public:  aws.Bool(false),
 					State:   aws.String("available"),
