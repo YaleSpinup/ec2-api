@@ -14,6 +14,7 @@ func (s *server) ImageListHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
 	account := s.mapAccountNumber(vars["account"])
+	name := vars["name"]
 
 	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
 
@@ -36,7 +37,7 @@ func (s *server) ImageListHandler(w http.ResponseWriter, r *http.Request) {
 	)
 
 	// TODO only return images from our org, current EC2-API returns all (needed for managed)
-	out, err := service.ListImages(r.Context(), "")
+	out, err := service.ListImages(r.Context(), "", name)
 	if err != nil {
 		handleError(w, err)
 		return
