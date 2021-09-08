@@ -67,6 +67,9 @@ func (e *Ec2) GetInstance(ctx context.Context, id string) (*ec2.Instance, error)
 
 	out, err := e.Service.DescribeInstancesWithContext(ctx, &ec2.DescribeInstancesInput{
 		InstanceIds: aws.StringSlice([]string{id}),
+		Filters: []*ec2.Filter{
+			notTerminated(),
+		},
 	})
 
 	if err != nil {
@@ -75,8 +78,12 @@ func (e *Ec2) GetInstance(ctx context.Context, id string) (*ec2.Instance, error)
 
 	log.Debugf("got output for instance %s: %+v", id, out)
 
+	if len(out.Reservations) == 0 || len(out.Reservations[0].Instances) == 0 {
+		return nil, apierror.New(apierror.ErrNotFound, "Resource not found", nil)
+	}
+
 	if len(out.Reservations) != 1 || len(out.Reservations[0].Instances) != 1 {
-		return nil, apierror.New(apierror.ErrBadRequest, "unexpected count", nil)
+		return nil, apierror.New(apierror.ErrBadRequest, "Unexpected resource count", nil)
 	}
 
 	return out.Reservations[0].Instances[0], nil
