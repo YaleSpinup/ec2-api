@@ -29,8 +29,23 @@ func (e *Ec2) ListSecurityGroups(ctx context.Context, org string, name string) (
 
 	list := make([]map[string]*string, len(out.SecurityGroups))
 	for i, s := range out.SecurityGroups {
+		tags := s.Tags
+		var sgName *string
+
+		// Loop through the tags and if Name exist, set the sgName value to it
+		for _, t := range tags {
+			if *t.Key == "Name" {
+				sgName = t.Value
+			}
+		}
+
+		// If sgName is nil, use the GroupName on the security group as a fallback
+		if sgName == nil {
+			sgName = s.GroupName
+		}
+
 		list[i] = map[string]*string{
-			*s.GroupId: s.GroupName,
+			*s.GroupId: sgName,
 		}
 	}
 
