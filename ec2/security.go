@@ -30,9 +30,9 @@ func (e *Ec2) ListSecurityGroups(ctx context.Context, org string, name string) (
 	list := make([]map[string]*string, len(out.SecurityGroups))
 	for i, s := range out.SecurityGroups {
 		list[i] = map[string]*string{
-			"id": s.GroupId,
+			*s.GroupId: s.GroupName,
 		}
 	}
 
-	return list, nil
+	return list, err
 }
