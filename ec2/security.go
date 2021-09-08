@@ -2,13 +2,15 @@ package ec2
 
 import (
 	"context"
+	"github.com/YaleSpinup/apierror"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	log "github.com/sirupsen/logrus"
 )
 
-func (e *Ec2) ListSecurityGroups(ctx context.Context, org string, name string) ([]map[string]*string, error) {
-	log.Infof("listing ec2 security groups (name: '%s', org: '%s')", name, org)
+// ListSecurityGroups List all security groups in an aws account
+func (e *Ec2) ListSecurityGroups(ctx context.Context, org string) ([]map[string]*string, error) {
+	log.Infof("listing ec2 security groups (org: '%s')", org)
 
 	var filters []*ec2.Filter
 	if org != "" {
@@ -50,4 +52,26 @@ func (e *Ec2) ListSecurityGroups(ctx context.Context, org string, name string) (
 	}
 
 	return list, err
+}
+
+// GetSecurityGroup Get the given security groups by a list of ids
+func (e *Ec2) GetSecurityGroup(ctx context.Context, ids ...string) ([]*ec2.SecurityGroup, error) {
+	if len(ids) == 0 {
+		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	log.Infof("getting details about security group ids %+v", ids)
+
+	input := ec2.DescribeSecurityGroupsInput{
+		GroupIds: aws.StringSlice(ids),
+	}
+
+	out, err := e.Service.DescribeSecurityGroupsWithContext(ctx, &input)
+	if err != nil {
+		return nil, ErrCode("getting details for security groups", err)
+	}
+
+	log.Debugf("returning security groups: %+v", out.SecurityGroups)
+
+	return out.SecurityGroups, err
 }
