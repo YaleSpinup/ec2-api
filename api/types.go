@@ -344,37 +344,37 @@ func (e *Ec2ImageVolumeMap) MarshalJSON() ([]byte, error) {
 }
 
 type Ec2SecurityGroupUserIdGroupPair struct {
-	Description          string `json:"description"`
-	GroupId              string `json:"group_id"`
-	GroupName            string `json:"group_name"`
-	PeeringStatus        string `json:"peering_status"`
-	UserId               string `json:"user_id"`
-	VpcId                string `json:"vpc_id"`
-	VpcPeeringConnection string `json:"vpc_peering_connection"`
+	Description          string `json:"description,omitempty"`
+	GroupId              string `json:"group_id,omitempty"`
+	GroupName            string `json:"group_name,omitempty"`
+	PeeringStatus        string `json:"peering_status,omitempty"`
+	UserId               string `json:"user_id,omitempty"`
+	VpcId                string `json:"vpc_id,omitempty"`
+	VpcPeeringConnection string `json:"vpc_peering_connection,omitempty"`
 }
 
 type Ec2SecurityGroupPrefixListId struct {
-	Description  string `json:"description"`
-	PrefixListId string `json:"prefix_list_id"`
+	Description  string `json:"description,omitempty"`
+	PrefixListId string `json:"prefix_list_id,omitempty"`
 }
 
 type Ec2SecurityGroupIpv6Range struct {
-	CidrIpv6    string `json:"cidr_ipv_6"`
-	Description string `json:"description"`
+	CidrIpv6    string `json:"cidr_ipv_6,omitempty"`
+	Description string `json:"description,omitempty"`
 }
 
 type Ec2SecurityGroupIpRange struct {
-	CidrIp      string `json:"cidr_ip"`
-	Description string `json:"description"`
+	CidrIp      string `json:"cidr_ip,omitempty"`
+	Description string `json:"description,omitempty"`
 }
 
 type Ec2SecurityGroupIpPermission struct {
-	FromPort         int64                              `json:"from_port"`
-	IpProtocol       string                             `json:"ip_protocol"`
+	FromPort         int64                              `json:"from_port,omitempty"`
+	IpProtocol       string                             `json:"ip_protocol,omitempty"`
 	IpRanges         []*Ec2SecurityGroupIpRange         `json:"ip_ranges"`
 	Ipv6Ranges       []*Ec2SecurityGroupIpv6Range       `json:"ipv_6_ranges"`
 	PrefixListIds    []*Ec2SecurityGroupPrefixListId    `json:"prefix_list_ids"`
-	ToPort           int64                              `json:"to_port"`
+	ToPort           int64                              `json:"to_port,omitempty,omitempty"`
 	UserIdGroupPairs []*Ec2SecurityGroupUserIdGroupPair `json:"user_id_group_pairs"`
 }
 

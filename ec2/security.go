@@ -18,8 +18,7 @@ func (e *Ec2) ListSecurityGroups(ctx context.Context, org string) ([]map[string]
 	}
 
 	input := ec2.DescribeSecurityGroupsInput{
-		GroupIds: aws.StringSlice([]string{}),
-		Filters:  filters,
+		Filters: filters,
 	}
 
 	out, err := e.Service.DescribeSecurityGroupsWithContext(ctx, &input)
@@ -27,27 +26,23 @@ func (e *Ec2) ListSecurityGroups(ctx context.Context, org string) ([]map[string]
 		return nil, ErrCode("listing security groups", err)
 	}
 
-	log.Debugf("returning list of %d snapshots", len(out.SecurityGroups))
+	log.Debugf("returning list of %d security groups", len(out.SecurityGroups))
 
 	list := make([]map[string]*string, len(out.SecurityGroups))
 	for i, s := range out.SecurityGroups {
 		tags := s.Tags
-		var sgName *string
+		sgName := aws.StringValue(s.GroupName)
 
 		// Loop through the tags and if Name exist, set the sgName value to it
 		for _, t := range tags {
-			if *t.Key == "Name" {
-				sgName = t.Value
+			if aws.StringValue(t.Key) == "Name" {
+				sgName = aws.StringValue(t.Value)
+				break
 			}
 		}
 
-		// If sgName is nil, use the GroupName on the security group as a fallback
-		if sgName == nil {
-			sgName = s.GroupName
-		}
-
 		list[i] = map[string]*string{
-			*s.GroupId: sgName,
+			aws.StringValue(s.GroupId): &sgName,
 		}
 	}
 

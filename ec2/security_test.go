@@ -308,6 +308,7 @@ func (m mockEC2Client) DescribeSecurityGroupsWithContext(ctx context.Context, in
 
 			var match bool
 			for _, id := range input.GroupIds {
+				m.t.Logf("id: %s | securityGroup.GroupId: %s", aws.StringValue(id), aws.StringValue(securityGroup.GroupId))
 				if aws.StringValue(id) == aws.StringValue(securityGroup.GroupId) {
 					match = true
 					break
@@ -325,6 +326,66 @@ func (m mockEC2Client) DescribeSecurityGroupsWithContext(ctx context.Context, in
 	}
 
 	return &ec2.DescribeSecurityGroupsOutput{SecurityGroups: securityGroupList}, nil
+}
+
+func TestEc2_ListSecurityGroups(t *testing.T) {
+	type fields struct {
+		session *session.Session
+		Service ec2iface.EC2API
+		org     string
+	}
+	type args struct {
+		ctx context.Context
+		org string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []map[string]*string
+		wantErr bool
+	}{
+		{
+			name:   "matches list",
+			fields: fields{Service: newmockEC2Client(t, nil)},
+			args: args{
+				ctx: context.TODO(),
+				org: "",
+			},
+			want: []map[string]*string{
+				{
+					"sg-0000000001": aws.String("foo1"),
+				},
+				{
+					"sg-0000000002": aws.String("foo2"),
+				},
+				{
+					"sg-0000000003": aws.String("foo3"),
+				},
+				{
+					"sg-0000000004": aws.String("foo4"),
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Ec2{
+				session: tt.fields.session,
+				Service: tt.fields.Service,
+				org:     tt.fields.org,
+			}
+			got, err := e.ListSecurityGroups(tt.args.ctx, tt.args.org)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Ec2.ListSecurityGroups() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Ec2.ListSecurityGroups() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestEc2_GetSecurityGroup(t *testing.T) {
