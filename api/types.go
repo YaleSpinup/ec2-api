@@ -384,7 +384,6 @@ type Ec2SecurityGroupResponse struct {
 	GroupName     string                          `json:"group_name"`
 	IncomingRules []*Ec2SecurityGroupIpPermission `json:"incoming_rules"`
 	OutgoingRules []*Ec2SecurityGroupIpPermission `json:"outgoing_rules"`
-	OwnerId       string                          `json:"owner_id"`
 	Tags          []map[string]string             `json:"tags"`
 	VpcId         string                          `json:"vpc_id"`
 }
@@ -446,13 +445,20 @@ func toEc2SecurityGroupIpPermissions(ipPermissions []*ec2.IpPermission) []*Ec2Se
 
 // toEc2SecurityGroupResponse Convert a security group to the proper json response format
 func toEc2SecurityGroupResponse(sg *ec2.SecurityGroup) *Ec2SecurityGroupResponse {
+	tagsList := make([]map[string]string, 0, len(sg.Tags))
+	for _, t := range sg.Tags {
+		tagsList = append(tagsList, map[string]string{
+			aws.StringValue(t.Key): aws.StringValue(t.Value),
+		})
+	}
+
 	return &Ec2SecurityGroupResponse{
 		Description:   aws.StringValue(sg.Description),
 		IncomingRules: toEc2SecurityGroupIpPermissions(sg.IpPermissions),
 		OutgoingRules: toEc2SecurityGroupIpPermissions(sg.IpPermissionsEgress),
 		GroupId:       aws.StringValue(sg.GroupId),
 		GroupName:     aws.StringValue(sg.GroupName),
-		OwnerId:       aws.StringValue(sg.OwnerId),
+		Tags:          tagsList,
 		VpcId:         aws.StringValue(sg.VpcId),
 	}
 }
