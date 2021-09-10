@@ -17,11 +17,9 @@ func (e *Ec2) ListSecurityGroups(ctx context.Context, org string) ([]map[string]
 		filters = []*ec2.Filter{inOrg(org)}
 	}
 
-	input := ec2.DescribeSecurityGroupsInput{
+	out, err := e.Service.DescribeSecurityGroupsWithContext(ctx, &ec2.DescribeSecurityGroupsInput{
 		Filters: filters,
-	}
-
-	out, err := e.Service.DescribeSecurityGroupsWithContext(ctx, &input)
+	})
 	if err != nil {
 		return nil, ErrCode("listing security groups", err)
 	}
@@ -57,11 +55,9 @@ func (e *Ec2) GetSecurityGroup(ctx context.Context, ids ...string) ([]*ec2.Secur
 
 	log.Infof("getting details about security group ids %+v", ids)
 
-	input := ec2.DescribeSecurityGroupsInput{
+	out, err := e.Service.DescribeSecurityGroupsWithContext(ctx, &ec2.DescribeSecurityGroupsInput{
 		GroupIds: aws.StringSlice(ids),
-	}
-
-	out, err := e.Service.DescribeSecurityGroupsWithContext(ctx, &input)
+	})
 	if err != nil {
 		return nil, ErrCode("getting details for security groups", err)
 	}
