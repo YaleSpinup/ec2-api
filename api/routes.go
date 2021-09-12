@@ -41,8 +41,8 @@ func (s *server) routes() {
 	api.HandleFunc("/{account}/instances/{id}/ssm/command", s.ProxyRequestHandler).Methods(http.MethodGet).Queries("command_id", "{cid}")
 	api.HandleFunc("/{account}/instances/{id}/ssm/association", s.ProxyRequestHandler).Methods(http.MethodGet)
 
-	api.HandleFunc("/{account}/sgs", s.ProxyRequestHandler).Methods(http.MethodGet)
-	api.HandleFunc("/{account}/sgs/{id}", s.ProxyRequestHandler).Methods(http.MethodGet)
+	api.HandleFunc("/{account}/sgs", s.SecurityGroupListHandler).Methods(http.MethodGet)
+	api.HandleFunc("/{account}/sgs/{id}", s.SecurityGroupGetHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/volumes", s.VolumeListHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/volumes/{id}", s.VolumeGetHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/volumes/{id}/modifications", s.ProxyRequestHandler).Methods(http.MethodGet)

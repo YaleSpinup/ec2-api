@@ -342,3 +342,123 @@ func (e *Ec2ImageVolumeMap) MarshalJSON() ([]byte, error) {
 
 	return json.Marshal(&output)
 }
+
+type Ec2SecurityGroupUserIdGroupPair struct {
+	Description          string `json:"description,omitempty"`
+	GroupId              string `json:"group_id,omitempty"`
+	GroupName            string `json:"group_name,omitempty"`
+	PeeringStatus        string `json:"peering_status,omitempty"`
+	UserId               string `json:"user_id,omitempty"`
+	VpcId                string `json:"vpc_id,omitempty"`
+	VpcPeeringConnection string `json:"vpc_peering_connection,omitempty"`
+}
+
+type Ec2SecurityGroupPrefixListId struct {
+	Description  string `json:"description,omitempty"`
+	PrefixListId string `json:"prefix_list_id,omitempty"`
+}
+
+type Ec2SecurityGroupIpv6Range struct {
+	CidrIpv6    string `json:"cidr_ipv_6,omitempty"`
+	Description string `json:"description,omitempty"`
+}
+
+type Ec2SecurityGroupIpRange struct {
+	CidrIp      string `json:"cidr_ip,omitempty"`
+	Description string `json:"description,omitempty"`
+}
+
+type Ec2SecurityGroupIpPermission struct {
+	FromPort         int64                              `json:"from_port,omitempty"`
+	IpProtocol       string                             `json:"ip_protocol,omitempty"`
+	IpRanges         []*Ec2SecurityGroupIpRange         `json:"ip_ranges"`
+	Ipv6Ranges       []*Ec2SecurityGroupIpv6Range       `json:"ipv_6_ranges"`
+	PrefixListIds    []*Ec2SecurityGroupPrefixListId    `json:"prefix_list_ids"`
+	ToPort           int64                              `json:"to_port,omitempty,omitempty"`
+	UserIdGroupPairs []*Ec2SecurityGroupUserIdGroupPair `json:"user_id_group_pairs"`
+}
+
+type Ec2SecurityGroupResponse struct {
+	Description   string                          `json:"description"`
+	GroupId       string                          `json:"group_id"`
+	GroupName     string                          `json:"group_name"`
+	IncomingRules []*Ec2SecurityGroupIpPermission `json:"incoming_rules"`
+	OutgoingRules []*Ec2SecurityGroupIpPermission `json:"outgoing_rules"`
+	Tags          []map[string]string             `json:"tags"`
+	VpcId         string                          `json:"vpc_id"`
+}
+
+// toEc2SecurityGroupIpPermissions Convert a list of ipPermissions to the proper json response format
+func toEc2SecurityGroupIpPermissions(ipPermissions []*ec2.IpPermission) []*Ec2SecurityGroupIpPermission {
+	outIpPermissions := []*Ec2SecurityGroupIpPermission{}
+	for _, outIpPermission := range ipPermissions {
+		ipRanges := []*Ec2SecurityGroupIpRange{}
+		for _, ipRange := range outIpPermission.IpRanges {
+			ipRanges = append(ipRanges, &Ec2SecurityGroupIpRange{
+				CidrIp:      aws.StringValue(ipRange.CidrIp),
+				Description: aws.StringValue(ipRange.Description),
+			})
+		}
+
+		ipv6Ranges := []*Ec2SecurityGroupIpv6Range{}
+		for _, ipv6Range := range outIpPermission.Ipv6Ranges {
+			ipv6Ranges = append(ipv6Ranges, &Ec2SecurityGroupIpv6Range{
+				CidrIpv6:    aws.StringValue(ipv6Range.CidrIpv6),
+				Description: aws.StringValue(ipv6Range.Description),
+			})
+		}
+
+		prefixListIds := []*Ec2SecurityGroupPrefixListId{}
+		for _, prefixListId := range outIpPermission.PrefixListIds {
+			prefixListIds = append(prefixListIds, &Ec2SecurityGroupPrefixListId{
+				Description:  aws.StringValue(prefixListId.Description),
+				PrefixListId: aws.StringValue(prefixListId.PrefixListId),
+			})
+		}
+
+		userIdGroupPairs := []*Ec2SecurityGroupUserIdGroupPair{}
+		for _, userIdGroupPair := range outIpPermission.UserIdGroupPairs {
+			userIdGroupPairs = append(userIdGroupPairs, &Ec2SecurityGroupUserIdGroupPair{
+				Description:          aws.StringValue(userIdGroupPair.Description),
+				GroupId:              aws.StringValue(userIdGroupPair.GroupId),
+				GroupName:            aws.StringValue(userIdGroupPair.GroupName),
+				PeeringStatus:        aws.StringValue(userIdGroupPair.PeeringStatus),
+				UserId:               aws.StringValue(userIdGroupPair.UserId),
+				VpcId:                aws.StringValue(userIdGroupPair.VpcId),
+				VpcPeeringConnection: aws.StringValue(userIdGroupPair.VpcPeeringConnectionId),
+			})
+		}
+
+		outIpPermissions = append(outIpPermissions, &Ec2SecurityGroupIpPermission{
+			FromPort:         aws.Int64Value(outIpPermission.FromPort),
+			IpProtocol:       aws.StringValue(outIpPermission.IpProtocol),
+			IpRanges:         ipRanges,
+			Ipv6Ranges:       ipv6Ranges,
+			PrefixListIds:    prefixListIds,
+			ToPort:           aws.Int64Value(outIpPermission.ToPort),
+			UserIdGroupPairs: userIdGroupPairs,
+		})
+	}
+
+	return outIpPermissions
+}
+
+// toEc2SecurityGroupResponse Convert a security group to the proper json response format
+func toEc2SecurityGroupResponse(sg *ec2.SecurityGroup) *Ec2SecurityGroupResponse {
+	tagsList := make([]map[string]string, 0, len(sg.Tags))
+	for _, t := range sg.Tags {
+		tagsList = append(tagsList, map[string]string{
+			aws.StringValue(t.Key): aws.StringValue(t.Value),
+		})
+	}
+
+	return &Ec2SecurityGroupResponse{
+		Description:   aws.StringValue(sg.Description),
+		IncomingRules: toEc2SecurityGroupIpPermissions(sg.IpPermissions),
+		OutgoingRules: toEc2SecurityGroupIpPermissions(sg.IpPermissionsEgress),
+		GroupId:       aws.StringValue(sg.GroupId),
+		GroupName:     aws.StringValue(sg.GroupName),
+		Tags:          tagsList,
+		VpcId:         aws.StringValue(sg.VpcId),
+	}
+}
