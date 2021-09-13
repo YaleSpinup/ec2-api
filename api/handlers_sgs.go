@@ -2,11 +2,12 @@ package api
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
+
 	"github.com/YaleSpinup/apierror"
 	"github.com/YaleSpinup/ec2-api/ec2"
 	"github.com/gorilla/mux"
-	"net/http"
-	"strconv"
 )
 
 func (s *server) SecurityGroupListHandler(w http.ResponseWriter, r *http.Request) {
@@ -88,4 +89,42 @@ func (s *server) SecurityGroupGetHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	handleResponseOk(w, toEc2SecurityGroupResponse(out[0]))
+}
+
+func (s *server) SecurityGroupDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	id := vars["id"]
+
+	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
+	policy, err := sgDeletePolicy(id)
+	if err != nil {
+		handleError(w, apierror.New(apierror.ErrInternalError, "failed to generate policy", err))
+		return
+	}
+
+	session, err := s.assumeRole(
+		r.Context(),
+		s.session.ExternalID,
+		role,
+		policy,
+	)
+	if err != nil {
+		msg := fmt.Sprintf("failed to assume role in account: %s", account)
+		handleError(w, apierror.New(apierror.ErrForbidden, msg, err))
+		return
+	}
+
+	service := ec2.New(
+		ec2.WithSession(session.Session),
+		ec2.WithOrg(s.org),
+	)
+
+	if err := service.DeleteSecurityGroup(r.Context(), id); err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponseOk(w, "OK")
 }

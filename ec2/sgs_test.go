@@ -2,13 +2,15 @@ package ec2
 
 import (
 	"context"
+	"reflect"
+	"testing"
+
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
-	"reflect"
-	"testing"
 )
 
 var securityGroups = []*ec2.SecurityGroup{
@@ -326,6 +328,20 @@ func (m mockEC2Client) DescribeSecurityGroupsWithContext(ctx context.Context, in
 	}
 
 	return &ec2.DescribeSecurityGroupsOutput{SecurityGroups: securityGroupList}, nil
+}
+
+func (m mockEC2Client) DeleteSecurityGroupWithContext(ctx context.Context, input *ec2.DeleteSecurityGroupInput, opts ...request.Option) (*ec2.DeleteSecurityGroupOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+
+	for _, securityGroup := range securityGroups {
+		if aws.StringValue(input.GroupId) == aws.StringValue(securityGroup.GroupId) {
+			return &ec2.DeleteSecurityGroupOutput{}, nil
+		}
+	}
+
+	return nil, awserr.New("NotFound", "Security group not found", nil)
 }
 
 func TestEc2_ListSecurityGroups(t *testing.T) {
@@ -902,6 +918,98 @@ func TestEc2_GetSecurityGroup(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Ec2.GetSecurityGroup() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEc2_DeleteSecurityGroup(t *testing.T) {
+	type fields struct {
+		session         *session.Session
+		Service         ec2iface.EC2API
+		DefaultKMSKeyId string
+		DefaultSgs      []string
+		DefaultSubnets  []string
+		org             string
+	}
+	type args struct {
+		ctx context.Context
+		id  string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name:    "empty id",
+			args:    args{ctx: context.TODO()},
+			wantErr: true,
+		},
+		{
+			name: "good id sg-0000000001",
+			args: args{
+				ctx: context.TODO(),
+				id:  "sg-0000000001",
+			},
+			fields: fields{Service: newmockEC2Client(t, nil)},
+		},
+		{
+			name: "good id sg-0000000002",
+			args: args{
+				ctx: context.TODO(),
+				id:  "sg-0000000002",
+			},
+			fields: fields{Service: newmockEC2Client(t, nil)},
+		},
+		{
+			name: "good id sg-0000000003",
+			args: args{
+				ctx: context.TODO(),
+				id:  "sg-0000000003",
+			},
+			fields: fields{Service: newmockEC2Client(t, nil)},
+		},
+		{
+			name: "good id sg-0000000004",
+			args: args{
+				ctx: context.TODO(),
+				id:  "sg-0000000004",
+			},
+			fields: fields{Service: newmockEC2Client(t, nil)},
+		},
+		{
+			name: "bad id",
+			args: args{
+				ctx: context.TODO(),
+				id:  "sg-missing",
+			},
+			fields:  fields{Service: newmockEC2Client(t, nil)},
+			wantErr: true,
+		},
+		{
+			name: "aws error",
+			args: args{
+				ctx: context.TODO(),
+				id:  "sg-0000000001",
+			},
+			fields:  fields{Service: newmockEC2Client(t, awserr.New("Bad Request", "boom.", nil))},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Ec2{
+				session:         tt.fields.session,
+				Service:         tt.fields.Service,
+				DefaultKMSKeyId: tt.fields.DefaultKMSKeyId,
+				DefaultSgs:      tt.fields.DefaultSgs,
+				DefaultSubnets:  tt.fields.DefaultSubnets,
+				org:             tt.fields.org,
+			}
+			if err := e.DeleteSecurityGroup(tt.args.ctx, tt.args.id); (err != nil) != tt.wantErr {
+				t.Errorf("Ec2.DeleteSecurityGroup() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
