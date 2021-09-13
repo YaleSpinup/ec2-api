@@ -2,6 +2,7 @@ package ec2
 
 import (
 	"context"
+
 	"github.com/YaleSpinup/apierror"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -65,4 +66,21 @@ func (e *Ec2) GetSecurityGroup(ctx context.Context, ids ...string) ([]*ec2.Secur
 	log.Debugf("returning security groups: %+v", out.SecurityGroups)
 
 	return out.SecurityGroups, err
+}
+
+// DeleteSecurityGroup deletes the given security group
+func (e *Ec2) DeleteSecurityGroup(ctx context.Context, id string) error {
+	if id == "" {
+		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	log.Infof("deleting security group %s", id)
+
+	if _, err := e.Service.DeleteSecurityGroupWithContext(ctx, &ec2.DeleteSecurityGroupInput{
+		GroupId: aws.String(id),
+	}); err != nil {
+		return ErrCode("deleting security group", err)
+	}
+
+	return nil
 }
