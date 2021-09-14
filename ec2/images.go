@@ -63,7 +63,6 @@ func (e *Ec2) GetImage(ctx context.Context, ids ...string) ([]*ec2.Image, error)
 	log.Infof("getting details about image ids %+v", ids)
 
 	input := ec2.DescribeImagesInput{
-		Owners:   aws.StringSlice([]string{"self"}),
 		ImageIds: aws.StringSlice(ids),
 	}
 
