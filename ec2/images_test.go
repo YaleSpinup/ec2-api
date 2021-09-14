@@ -415,7 +415,21 @@ func TestEc2_GetImage(t *testing.T) {
 				ctx: context.TODO(),
 				ids: []string{"i-00000005"},
 			},
-			want: []*ec2.Image{},
+			want: []*ec2.Image{
+				{
+					ImageId: aws.String("i-00000005"),
+					Name:    aws.String("Image_00000005"),
+					OwnerId: aws.String("aws"),
+					Public:  aws.Bool(false),
+					State:   aws.String("available"),
+					Tags: []*ec2.Tag{
+						{
+							Key:   aws.String("yale:org"),
+							Value: aws.String("dev"),
+						},
+					},
+				},
+			},
 		},
 		{
 			name:   "multiple ids",
@@ -505,6 +519,19 @@ func TestEc2_GetImage(t *testing.T) {
 						{
 							Key:   aws.String("yale:org"),
 							Value: aws.String("tst"),
+						},
+					},
+				},
+				{
+					ImageId: aws.String("i-00000005"),
+					Name:    aws.String("Image_00000005"),
+					OwnerId: aws.String("aws"),
+					Public:  aws.Bool(false),
+					State:   aws.String("available"),
+					Tags: []*ec2.Tag{
+						{
+							Key:   aws.String("yale:org"),
+							Value: aws.String("dev"),
 						},
 					},
 				},
