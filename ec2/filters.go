@@ -39,3 +39,12 @@ func withInstanceId(id string) *ec2.Filter {
 		),
 	}
 }
+
+func isAvailable() *ec2.Filter {
+	return &ec2.Filter{
+		Name: aws.String("state"),
+		Values: aws.StringSlice(
+			[]string{"available"},
+		),
+	}
+}

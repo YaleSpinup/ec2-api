@@ -53,7 +53,7 @@ func (s *server) routes() {
 	api.HandleFunc("/{account}/images", s.ImageListHandler).Methods(http.MethodGet).Queries("name", "{name}")
 	api.HandleFunc("/{account}/images", s.ImageListHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/images/{id}", s.ImageGetHandler).Methods(http.MethodGet)
-	api.HandleFunc("/{account}/vpcs", s.ProxyRequestHandler).Methods(http.MethodGet)
+	api.HandleFunc("/{account}/vpcs", s.VpvListHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/vpcs/{id}", s.ProxyRequestHandler).Methods(http.MethodGet)
 
 	api.HandleFunc("/{account}/instances", s.ProxyRequestHandler).Methods(http.MethodPost)
