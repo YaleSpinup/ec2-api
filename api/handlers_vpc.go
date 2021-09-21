@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func (s *server) VpvListHandler(w http.ResponseWriter, r *http.Request) {
+func (s *server) VpcListHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
 	account := s.mapAccountNumber(vars["account"])
