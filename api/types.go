@@ -374,7 +374,7 @@ type Ec2SecurityGroupIpPermission struct {
 	IpRanges         []*Ec2SecurityGroupIpRange         `json:"ip_ranges"`
 	Ipv6Ranges       []*Ec2SecurityGroupIpv6Range       `json:"ipv_6_ranges"`
 	PrefixListIds    []*Ec2SecurityGroupPrefixListId    `json:"prefix_list_ids"`
-	ToPort           int64                              `json:"to_port,omitempty,omitempty"`
+	ToPort           int64                              `json:"to_port,omitempty"`
 	UserIdGroupPairs []*Ec2SecurityGroupUserIdGroupPair `json:"user_id_group_pairs"`
 }
 
