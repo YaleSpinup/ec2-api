@@ -77,7 +77,7 @@ func Test_withInstanceId(t *testing.T) {
 		want *ec2.Filter
 	}{
 		{
-			name: "wit instance id",
+			name: "with instance id",
 			args: args{id: "i-abcdefg0123"},
 			want: &ec2.Filter{
 				Name: aws.String("tag:spinup:instanceid"),
@@ -91,6 +91,35 @@ func Test_withInstanceId(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := withInstanceId(tt.args.id); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("withInstanceId() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_inVpc(t *testing.T) {
+	type args struct {
+		vpc string
+	}
+	tests := []struct {
+		name string
+		args args
+		want *ec2.Filter
+	}{
+		{
+			name: "with vpc id",
+			args: args{vpc: "vpc-abcdefg0123"},
+			want: &ec2.Filter{
+				Name: aws.String("vpc-id"),
+				Values: aws.StringSlice(
+					[]string{"vpc-abcdefg0123"},
+				),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := inVpc(tt.args.vpc); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("inVpc() = %v, want %v", got, tt.want)
 			}
 		})
 	}
