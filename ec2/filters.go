@@ -31,6 +31,15 @@ func inOrg(org string) *ec2.Filter {
 	}
 }
 
+func inVpc(vpc string) *ec2.Filter {
+	return &ec2.Filter{
+		Name: aws.String("vpc-id"),
+		Values: aws.StringSlice(
+			[]string{vpc},
+		),
+	}
+}
+
 func withInstanceId(id string) *ec2.Filter {
 	return &ec2.Filter{
 		Name: aws.String("tag:spinup:instanceid"),
