@@ -81,13 +81,12 @@ func (s *server) SecurityGroupUpdateHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	out, err := orch.updateSecurityGroup(r.Context(), id, req)
-	if err != nil {
+	if err := orch.updateSecurityGroup(r.Context(), id, req); err != nil {
 		handleError(w, err)
 		return
 	}
 
-	handleResponseOk(w, out)
+	handleResponseOk(w, nil)
 }
 
 func (s *server) SecurityGroupListHandler(w http.ResponseWriter, r *http.Request) {

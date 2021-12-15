@@ -78,25 +78,25 @@ func (o *ec2Orchestrator) createSecurityGroup(ctx context.Context, req *Ec2Secur
 	return aws.StringValue(out.GroupId), nil
 }
 
-func (o *ec2Orchestrator) updateSecurityGroup(ctx context.Context, id string, req *Ec2SecurityGroupRuleRequest) (string, error) {
+func (o *ec2Orchestrator) updateSecurityGroup(ctx context.Context, id string, req *Ec2SecurityGroupRuleRequest) error {
 	if id == "" || req == nil {
-		return "", apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
 
 	switch *req.Action {
 	case "add":
 		if err := o.client.AuthorizeSecurityGroup(ctx, *req.RuleType, id, ipPermissionsFromRequest(req)); err != nil {
-			return "", err
+			return err
 		}
 	case "remove":
 		if err := o.client.RevokeSecurityGroup(ctx, *req.RuleType, id, ipPermissionsFromRequest(req)); err != nil {
-			return "", err
+			return err
 		}
 	default:
-		return "", apierror.New(apierror.ErrBadRequest, "action should be [add|remove]", nil)
+		return apierror.New(apierror.ErrBadRequest, "action should be [add|remove]", nil)
 	}
 
-	return "", nil
+	return nil
 }
 
 func ipPermissionsFromRequest(r *Ec2SecurityGroupRuleRequest) []*ec2.IpPermission {
