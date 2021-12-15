@@ -66,35 +66,7 @@ func (o *ec2Orchestrator) createSecurityGroup(ctx context.Context, req *Ec2Secur
 				return "", apierror.New(apierror.ErrBadRequest, "cidr_ip or sg_id is required", nil)
 			}
 
-			ipPermissions := []*ec2.IpPermission{}
-
-			if r.CidrIp != nil {
-				ipPermissions = append(ipPermissions, &ec2.IpPermission{
-					IpProtocol: r.IpProtocol,
-					FromPort:   r.FromPort,
-					ToPort:     r.ToPort,
-					IpRanges: []*ec2.IpRange{
-						{
-							CidrIp:      r.CidrIp,
-							Description: r.Description,
-						},
-					},
-				})
-			}
-
-			if r.SgId != nil {
-				ipPermissions = append(ipPermissions, &ec2.IpPermission{
-					IpProtocol: r.IpProtocol,
-					FromPort:   r.FromPort,
-					ToPort:     r.ToPort,
-					UserIdGroupPairs: []*ec2.UserIdGroupPair{
-						{
-							GroupId:     r.SgId,
-							Description: r.Description,
-						},
-					},
-				})
-			}
+			ipPermissions := ipPermissionsFromRequest(r)
 
 			err = o.client.AuthorizeSecurityGroup(ctx, *r.RuleType, aws.StringValue(out.GroupId), ipPermissions)
 			if err != nil {
@@ -104,4 +76,59 @@ func (o *ec2Orchestrator) createSecurityGroup(ctx context.Context, req *Ec2Secur
 	}
 
 	return aws.StringValue(out.GroupId), nil
+}
+
+func (o *ec2Orchestrator) updateSecurityGroup(ctx context.Context, id string, req *Ec2SecurityGroupRuleRequest) (string, error) {
+	if id == "" || req == nil {
+		return "", apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	switch *req.Action {
+	case "add":
+		if err := o.client.AuthorizeSecurityGroup(ctx, *req.RuleType, id, ipPermissionsFromRequest(req)); err != nil {
+			return "", err
+		}
+	case "remove":
+		if err := o.client.RevokeSecurityGroup(ctx, *req.RuleType, id, ipPermissionsFromRequest(req)); err != nil {
+			return "", err
+		}
+	default:
+		return "", apierror.New(apierror.ErrBadRequest, "action should be [add|remove]", nil)
+	}
+
+	return "", nil
+}
+
+func ipPermissionsFromRequest(r *Ec2SecurityGroupRuleRequest) []*ec2.IpPermission {
+	ipPermissions := []*ec2.IpPermission{}
+
+	if r.CidrIp != nil {
+		ipPermissions = append(ipPermissions, &ec2.IpPermission{
+			IpProtocol: r.IpProtocol,
+			FromPort:   r.FromPort,
+			ToPort:     r.ToPort,
+			IpRanges: []*ec2.IpRange{
+				{
+					CidrIp:      r.CidrIp,
+					Description: r.Description,
+				},
+			},
+		})
+	}
+
+	if r.SgId != nil {
+		ipPermissions = append(ipPermissions, &ec2.IpPermission{
+			IpProtocol: r.IpProtocol,
+			FromPort:   r.FromPort,
+			ToPort:     r.ToPort,
+			UserIdGroupPairs: []*ec2.UserIdGroupPair{
+				{
+					GroupId:     r.SgId,
+					Description: r.Description,
+				},
+			},
+		})
+	}
+
+	return ipPermissions
 }

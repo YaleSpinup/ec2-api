@@ -408,6 +408,34 @@ func (m mockEC2Client) AuthorizeSecurityGroupEgressWithContext(ctx context.Conte
 	return nil, awserr.New("NotFound", "Security group not found", nil)
 }
 
+func (m mockEC2Client) RevokeSecurityGroupIngressWithContext(ctx context.Context, input *ec2.RevokeSecurityGroupIngressInput, opts ...request.Option) (*ec2.RevokeSecurityGroupIngressOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+
+	for _, securityGroup := range securityGroups {
+		if aws.StringValue(input.GroupId) == aws.StringValue(securityGroup.GroupId) {
+			return &ec2.RevokeSecurityGroupIngressOutput{Return: aws.Bool(true)}, nil
+		}
+	}
+
+	return nil, awserr.New("NotFound", "Security group not found", nil)
+}
+
+func (m mockEC2Client) RevokeSecurityGroupEgressWithContext(ctx context.Context, input *ec2.RevokeSecurityGroupEgressInput, opts ...request.Option) (*ec2.RevokeSecurityGroupEgressOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+
+	for _, securityGroup := range securityGroups {
+		if aws.StringValue(input.GroupId) == aws.StringValue(securityGroup.GroupId) {
+			return &ec2.RevokeSecurityGroupEgressOutput{Return: aws.Bool(true)}, nil
+		}
+	}
+
+	return nil, awserr.New("NotFound", "Security group not found", nil)
+}
+
 func TestEc2_ListSecurityGroups(t *testing.T) {
 	type fields struct {
 		session *session.Session
@@ -1443,6 +1471,228 @@ func TestEc2_CreateSecurityGroup(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Ec2.CreateSecurityGroup() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEc2_RevokeSecurityGroup(t *testing.T) {
+	type fields struct {
+		session         *session.Session
+		Service         ec2iface.EC2API
+		DefaultKMSKeyId string
+		DefaultSgs      []string
+		DefaultSubnets  []string
+		org             string
+	}
+	type args struct {
+		ctx         context.Context
+		direction   string
+		sg          string
+		permissions []*ec2.IpPermission
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "empty direction",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx: context.TODO(),
+				sg:  "sg-0000000001",
+				permissions: []*ec2.IpPermission{
+					{
+						IpProtocol: aws.String("tcp"),
+						FromPort:   aws.Int64(-1),
+						ToPort:     aws.Int64(-1),
+						IpRanges: []*ec2.IpRange{
+							{
+								CidrIp:      aws.String("192.168.0.0/24"),
+								Description: aws.String("hax"),
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty sg",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx:       context.TODO(),
+				direction: "inbound",
+				permissions: []*ec2.IpPermission{
+					{
+						IpProtocol: aws.String("tcp"),
+						FromPort:   aws.Int64(-1),
+						ToPort:     aws.Int64(-1),
+						IpRanges: []*ec2.IpRange{
+							{
+								CidrIp:      aws.String("192.168.0.0/24"),
+								Description: aws.String("hax"),
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty permissions",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx:       context.TODO(),
+				direction: "inbound",
+				sg:        "sg-0000000001",
+			},
+			wantErr: true,
+		},
+		{
+			name: "inbound rule",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx:       context.TODO(),
+				direction: "inbound",
+				sg:        "sg-0000000001",
+				permissions: []*ec2.IpPermission{
+					{
+						IpProtocol: aws.String("tcp"),
+						FromPort:   aws.Int64(-1),
+						ToPort:     aws.Int64(-1),
+						IpRanges: []*ec2.IpRange{
+							{
+								CidrIp:      aws.String("192.168.0.0/24"),
+								Description: aws.String("hax"),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "inbound rule err",
+			fields: fields{
+				Service: newmockEC2Client(t, awserr.New("BadRequest", "boom", nil)),
+			},
+			args: args{
+				ctx:       context.TODO(),
+				direction: "inbound",
+				sg:        "sg-0000000001",
+				permissions: []*ec2.IpPermission{
+					{
+						IpProtocol: aws.String("tcp"),
+						FromPort:   aws.Int64(-1),
+						ToPort:     aws.Int64(-1),
+						IpRanges: []*ec2.IpRange{
+							{
+								CidrIp:      aws.String("192.168.0.0/24"),
+								Description: aws.String("hax"),
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "outbound rule",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx:       context.TODO(),
+				direction: "outbound",
+				sg:        "sg-0000000001",
+				permissions: []*ec2.IpPermission{
+					{
+						IpProtocol: aws.String("tcp"),
+						FromPort:   aws.Int64(-1),
+						ToPort:     aws.Int64(-1),
+						IpRanges: []*ec2.IpRange{
+							{
+								CidrIp:      aws.String("192.168.0.0/24"),
+								Description: aws.String("hax"),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "outbound rule err",
+			fields: fields{
+				Service: newmockEC2Client(t, awserr.New("BadRequest", "boom", nil)),
+			},
+			args: args{
+				ctx:       context.TODO(),
+				direction: "outbound",
+				sg:        "sg-0000000001",
+				permissions: []*ec2.IpPermission{
+					{
+						IpProtocol: aws.String("tcp"),
+						FromPort:   aws.Int64(-1),
+						ToPort:     aws.Int64(-1),
+						IpRanges: []*ec2.IpRange{
+							{
+								CidrIp:      aws.String("192.168.0.0/24"),
+								Description: aws.String("hax"),
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "bad direction",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx:       context.TODO(),
+				direction: "sideways",
+				sg:        "sg-0000000001",
+				permissions: []*ec2.IpPermission{
+					{
+						IpProtocol: aws.String("tcp"),
+						FromPort:   aws.Int64(-1),
+						ToPort:     aws.Int64(-1),
+						IpRanges: []*ec2.IpRange{
+							{
+								CidrIp:      aws.String("192.168.0.0/24"),
+								Description: aws.String("hax"),
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Ec2{
+				session:         tt.fields.session,
+				Service:         tt.fields.Service,
+				DefaultKMSKeyId: tt.fields.DefaultKMSKeyId,
+				DefaultSgs:      tt.fields.DefaultSgs,
+				DefaultSubnets:  tt.fields.DefaultSubnets,
+				org:             tt.fields.org,
+			}
+			if err := e.RevokeSecurityGroup(tt.args.ctx, tt.args.direction, tt.args.sg, tt.args.permissions); (err != nil) != tt.wantErr {
+				t.Errorf("Ec2.RevokeSecurityGroup() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

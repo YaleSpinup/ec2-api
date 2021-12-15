@@ -344,14 +344,14 @@ func (e *Ec2ImageVolumeMap) MarshalJSON() ([]byte, error) {
 }
 
 type Ec2SecurityGroupRequest struct {
-	Description string                             `json:"description"`
-	GroupName   string                             `json:"group_name"`
-	InitRules   []*Ec2SecurityGroupInitRuleRequest `json:"init_rules"`
-	Tags        []map[string]string                `json:"tags"`
-	VpcId       string                             `json:"vpc_id"`
+	Description string                         `json:"description"`
+	GroupName   string                         `json:"group_name"`
+	InitRules   []*Ec2SecurityGroupRuleRequest `json:"init_rules"`
+	Tags        []map[string]string            `json:"tags"`
+	VpcId       string                         `json:"vpc_id"`
 }
 
-type Ec2SecurityGroupInitRuleRequest struct {
+type Ec2SecurityGroupRuleRequest struct {
 	RuleType    *string `json:"rule_type"`   // Direction of traffic: [inbound|outbound]
 	Action      *string `json:"action"`      // Adding or removing the rule: [add|remove]
 	CidrIp      *string `json:"cidr_ip"`     // IPv4 CIDR address range to allow traffic to/from

@@ -50,6 +50,46 @@ func (s *server) SecurityGroupCreateHandler(w http.ResponseWriter, r *http.Reque
 	handleResponseOk(w, out)
 }
 
+func (s *server) SecurityGroupUpdateHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	id := vars["id"]
+
+	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
+	policy, err := sgUpdatePolicy(id)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	req := &Ec2SecurityGroupRuleRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		handleError(w, err)
+		return
+	}
+
+	orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
+		inlinePolicy: policy,
+		role:         role,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+		},
+	})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	out, err := orch.updateSecurityGroup(r.Context(), id, req)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponseOk(w, out)
+}
+
 func (s *server) SecurityGroupListHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
