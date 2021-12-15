@@ -106,6 +106,8 @@ func sgUpdatePolicy(id string) (string, error) {
 					"ec2:ModifySecurityGroupRules",
 					"ec2:AuthorizeSecurityGroupEgress",
 					"ec2:AuthorizeSecurityGroupIngress",
+					"ec2:RevokeSecurityGroupEgress",
+					"ec2:RevokeSecurityGroupIngress",
 				},
 				Resource: []string{sgResource},
 			},
