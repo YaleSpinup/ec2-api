@@ -343,6 +343,25 @@ func (e *Ec2ImageVolumeMap) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&output)
 }
 
+type Ec2SecurityGroupRequest struct {
+	Description string                             `json:"description"`
+	GroupName   string                             `json:"group_name"`
+	InitRules   []*Ec2SecurityGroupInitRuleRequest `json:"init_rules"`
+	Tags        []map[string]string                `json:"tags"`
+	VpcId       string                             `json:"vpc_id"`
+}
+
+type Ec2SecurityGroupInitRuleRequest struct {
+	RuleType    *string `json:"rule_type"`   // Direction of traffic: [inbound|outbound]
+	Action      *string `json:"action"`      // Adding or removing the rule: [add|remove]
+	CidrIp      *string `json:"cidr_ip"`     // IPv4 CIDR address range to allow traffic to/from
+	SgId        *string `json:"sg_id"`       // Security group to allow traffic to/from
+	IpProtocol  *string `json:"ip_protocol"` // IP Protocol name [tcp|udp|icmp|-1]
+	FromPort    *int64  `json:"from_port"`   // The starting port (not required if Protocol -1)
+	ToPort      *int64  `json:"to_port"`     // The ending port (not required if Protocol -1)
+	Description *string `json:"description"` // Optional description for this rule
+}
+
 type Ec2SecurityGroupUserIdGroupPair struct {
 	Description          string `json:"description,omitempty"`
 	GroupId              string `json:"group_id,omitempty"`

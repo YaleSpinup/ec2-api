@@ -38,7 +38,7 @@ func orgTagAccessPolicy(org string) (string, error) {
 }
 
 func sgDeletePolicy(id string) (string, error) {
-	log.Debugf("generating org policy document")
+	log.Debugf("generating sg delete policy document")
 
 	sgResource := fmt.Sprintf("arn:aws:ec2:*:*:security-group/%s", id)
 
@@ -51,6 +51,35 @@ func sgDeletePolicy(id string) (string, error) {
 					"ec2:DeleteSecurityGroup",
 				},
 				Resource: []string{sgResource},
+			},
+		},
+	}
+
+	j, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+
+	return string(j), nil
+}
+
+func sgCreatePolicy() (string, error) {
+	log.Debugf("generating sg crete policy document")
+
+	policy := iam.PolicyDocument{
+		Version: "2012-10-17",
+		Statement: []iam.StatementEntry{
+			{
+				Effect: "Allow",
+				Action: []string{
+					"ec2:CreateSecurityGroup",
+					"ec2:CreateTags",
+					"ec2:ModifySecurityGroupRules",
+					"ec2:DeleteSecurityGroup",
+					"ec2:AuthorizeSecurityGroupEgress",
+					"ec2:AuthorizeSecurityGroupIngress",
+				},
+				Resource: []string{"*"},
 			},
 		},
 	}

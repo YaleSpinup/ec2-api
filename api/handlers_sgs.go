@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -9,6 +10,45 @@ import (
 	"github.com/YaleSpinup/ec2-api/ec2"
 	"github.com/gorilla/mux"
 )
+
+func (s *server) SecurityGroupCreateHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+
+	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
+	policy, err := sgCreatePolicy()
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	req := &Ec2SecurityGroupRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		handleError(w, err)
+		return
+	}
+
+	orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
+		inlinePolicy: policy,
+		role:         role,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+		},
+	})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	out, err := orch.createSecurityGroup(r.Context(), req)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponseOk(w, out)
+}
 
 func (s *server) SecurityGroupListHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}

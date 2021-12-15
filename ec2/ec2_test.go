@@ -24,7 +24,7 @@ func newmockEC2Client(t *testing.T, err error) ec2iface.EC2API {
 func TestNewSession(t *testing.T) {
 	client := New()
 	to := reflect.TypeOf(client).String()
-	if to != "ec2.Ec2" {
-		t.Errorf("expected type to be 'ec2.Ec2', got %s", to)
+	if to != "*ec2.Ec2" {
+		t.Errorf("expected type to be '*ec2.Ec2', got %s", to)
 	}
 }
