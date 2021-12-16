@@ -26,27 +26,32 @@ func (o *ec2Orchestrator) createSecurityGroup(ctx context.Context, req *Ec2Secur
 		}
 	}()
 
-	tags := []*ec2.Tag{}
-	for _, tag := range req.Tags {
-		for k, v := range tag {
-			tags = append(tags, &ec2.Tag{
-				Key:   aws.String(k),
-				Value: aws.String(v),
-			})
-		}
-	}
-
-	out, err := o.client.CreateSecurityGroup(ctx, &ec2.CreateSecurityGroupInput{
+	input := &ec2.CreateSecurityGroupInput{
 		Description: aws.String(req.Description),
 		GroupName:   aws.String(req.GroupName),
 		VpcId:       aws.String(req.VpcId),
-		TagSpecifications: []*ec2.TagSpecification{
+	}
+
+	if len(req.Tags) > 0 {
+		tags := []*ec2.Tag{}
+		for _, tag := range req.Tags {
+			for k, v := range tag {
+				tags = append(tags, &ec2.Tag{
+					Key:   aws.String(k),
+					Value: aws.String(v),
+				})
+			}
+		}
+
+		input.SetTagSpecifications([]*ec2.TagSpecification{
 			{
 				ResourceType: aws.String("security-group"),
 				Tags:         tags,
 			},
-		},
-	})
+		})
+	}
+
+	out, err := o.client.CreateSecurityGroup(ctx, input)
 	if err != nil {
 		return "", err
 	}
