@@ -14,8 +14,8 @@ type sessionParams struct {
 }
 
 type ec2Orchestrator struct {
-	client *ec2.Ec2
-	server *server
+	ec2Client *ec2.Ec2
+	server    *server
 }
 
 func (s *server) newEc2Orchestrator(ctx context.Context, sp *sessionParams) (*ec2Orchestrator, error) {
@@ -33,7 +33,7 @@ func (s *server) newEc2Orchestrator(ctx context.Context, sp *sessionParams) (*ec
 	}
 
 	return &ec2Orchestrator{
-		client: ec2.New(ec2.WithSession(session.Session)),
-		server: s,
+		ec2Client: ec2.New(ec2.WithSession(session.Session)),
+		server:    s,
 	}, nil
 }

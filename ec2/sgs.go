@@ -156,7 +156,7 @@ func (e *Ec2) AuthorizeSecurityGroup(ctx context.Context, direction, sg string, 
 			return apierror.New(apierror.ErrBadRequest, "security group authorization rule failed", nil)
 		}
 	default:
-		return apierror.New(apierror.ErrBadRequest, "direction is required to be [outbound|enbound]", nil)
+		return apierror.New(apierror.ErrBadRequest, "direction is required to be [outbound|inbound]", nil)
 	}
 
 	return nil

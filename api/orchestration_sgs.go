@@ -33,37 +33,27 @@ func (o *ec2Orchestrator) createSecurityGroup(ctx context.Context, req *Ec2Secur
 	}
 
 	if len(req.Tags) > 0 {
-		tags := []*ec2.Tag{}
-		for _, tag := range req.Tags {
-			for k, v := range tag {
-				tags = append(tags, &ec2.Tag{
-					Key:   aws.String(k),
-					Value: aws.String(v),
-				})
-			}
-		}
-
 		input.SetTagSpecifications([]*ec2.TagSpecification{
 			{
 				ResourceType: aws.String("security-group"),
-				Tags:         tags,
+				Tags:         normalizeTags(req.Tags),
 			},
 		})
 	}
 
-	out, err := o.client.CreateSecurityGroup(ctx, input)
+	out, err := o.ec2Client.CreateSecurityGroup(ctx, input)
 	if err != nil {
 		return "", err
 	}
 
-	err = o.client.WaitUntilSecurityGroupExists(ctx, aws.StringValue(out.GroupId))
-	if err != nil {
+	// err is used to trigger rollback, don't shadow it here
+	if err = o.ec2Client.WaitUntilSecurityGroupExists(ctx, aws.StringValue(out.GroupId)); err != nil {
 		return "", err
 	}
 
 	rollBackTasks = append(rollBackTasks, func(ctx context.Context) error {
 		log.Errorf("rollback: deleting security group: %s", aws.StringValue(out.GroupId))
-		return o.client.DeleteSecurityGroup(ctx, aws.StringValue(out.GroupId))
+		return o.ec2Client.DeleteSecurityGroup(ctx, aws.StringValue(out.GroupId))
 	})
 
 	if len(req.InitRules) > 0 {
@@ -76,8 +66,8 @@ func (o *ec2Orchestrator) createSecurityGroup(ctx context.Context, req *Ec2Secur
 
 			ipPermissions := ipPermissionsFromRequest(r)
 
-			err = o.client.AuthorizeSecurityGroup(ctx, *r.RuleType, aws.StringValue(out.GroupId), ipPermissions)
-			if err != nil {
+			// err is used to trigger rollback, don't shadow it here
+			if err = o.ec2Client.AuthorizeSecurityGroup(ctx, *r.RuleType, aws.StringValue(out.GroupId), ipPermissions); err != nil {
 				return "", err
 			}
 		}
@@ -95,11 +85,11 @@ func (o *ec2Orchestrator) updateSecurityGroup(ctx context.Context, id string, re
 
 	switch *req.Action {
 	case "add":
-		if err := o.client.AuthorizeSecurityGroup(ctx, *req.RuleType, id, ipPermissionsFromRequest(req)); err != nil {
+		if err := o.ec2Client.AuthorizeSecurityGroup(ctx, *req.RuleType, id, ipPermissionsFromRequest(req)); err != nil {
 			return err
 		}
 	case "remove":
-		if err := o.client.RevokeSecurityGroup(ctx, *req.RuleType, id, ipPermissionsFromRequest(req)); err != nil {
+		if err := o.ec2Client.RevokeSecurityGroup(ctx, *req.RuleType, id, ipPermissionsFromRequest(req)); err != nil {
 			return err
 		}
 	default:
@@ -141,4 +131,17 @@ func ipPermissionsFromRequest(r *Ec2SecurityGroupRuleRequest) []*ec2.IpPermissio
 	}
 
 	return ipPermissions
+}
+
+func normalizeTags(tags []map[string]string) []*ec2.Tag {
+	t := []*ec2.Tag{}
+	for _, tag := range tags {
+		for k, v := range tag {
+			t = append(t, &ec2.Tag{
+				Key:   aws.String(k),
+				Value: aws.String(v),
+			})
+		}
+	}
+	return t
 }
