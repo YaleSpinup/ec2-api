@@ -5,6 +5,7 @@ import (
 
 	"github.com/YaleSpinup/apierror"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awsutil"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	log "github.com/sirupsen/logrus"
 )
@@ -13,6 +14,8 @@ func (o *ec2Orchestrator) createSecurityGroup(ctx context.Context, req *Ec2Secur
 	if req == nil {
 		return "", apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
+
+	log.Debugf("got request to create security group: %s", awsutil.Prettify(req))
 
 	var err error
 	var rollBackTasks []rollbackFunc
@@ -82,6 +85,8 @@ func (o *ec2Orchestrator) updateSecurityGroup(ctx context.Context, id string, re
 	if id == "" || req == nil {
 		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
+
+	log.Debugf("got request to update security group %s: %s", id, awsutil.Prettify(req))
 
 	switch *req.Action {
 	case "add":
