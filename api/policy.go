@@ -91,3 +91,33 @@ func sgCreatePolicy() (string, error) {
 
 	return string(j), nil
 }
+
+func sgUpdatePolicy(id string) (string, error) {
+	log.Debugf("generating sg crete policy document")
+
+	sgResource := fmt.Sprintf("arn:aws:ec2:*:*:security-group/%s", id)
+
+	policy := iam.PolicyDocument{
+		Version: "2012-10-17",
+		Statement: []iam.StatementEntry{
+			{
+				Effect: "Allow",
+				Action: []string{
+					"ec2:ModifySecurityGroupRules",
+					"ec2:AuthorizeSecurityGroupEgress",
+					"ec2:AuthorizeSecurityGroupIngress",
+					"ec2:RevokeSecurityGroupEgress",
+					"ec2:RevokeSecurityGroupIngress",
+				},
+				Resource: []string{sgResource},
+			},
+		},
+	}
+
+	j, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+
+	return string(j), nil
+}
