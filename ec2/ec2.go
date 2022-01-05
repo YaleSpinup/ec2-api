@@ -22,7 +22,7 @@ type Ec2 struct {
 type EC2Option func(*Ec2)
 
 // New creates a new Ec2
-func New(opts ...EC2Option) Ec2 {
+func New(opts ...EC2Option) *Ec2 {
 	e := Ec2{}
 
 	for _, opt := range opts {
@@ -33,7 +33,7 @@ func New(opts ...EC2Option) Ec2 {
 		e.Service = ec2.New(e.session)
 	}
 
-	return e
+	return &e
 }
 
 func WithSession(sess *session.Session) EC2Option {

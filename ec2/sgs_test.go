@@ -2,6 +2,7 @@ package ec2
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -338,6 +339,97 @@ func (m mockEC2Client) DeleteSecurityGroupWithContext(ctx context.Context, input
 	for _, securityGroup := range securityGroups {
 		if aws.StringValue(input.GroupId) == aws.StringValue(securityGroup.GroupId) {
 			return &ec2.DeleteSecurityGroupOutput{}, nil
+		}
+	}
+
+	return nil, awserr.New("NotFound", "Security group not found", nil)
+}
+
+func (m mockEC2Client) CreateSecurityGroupWithContext(ctx context.Context, input *ec2.CreateSecurityGroupInput, opts ...request.Option) (*ec2.CreateSecurityGroupOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+
+	return &ec2.CreateSecurityGroupOutput{GroupId: aws.String("sg-0000000001")}, nil
+}
+
+func (m mockEC2Client) WaitUntilSecurityGroupExistsWithContext(ctx context.Context, input *ec2.DescribeSecurityGroupsInput, opts ...request.WaiterOption) error {
+	if m.err != nil {
+		return m.err
+	}
+
+	found := true
+	for _, sg := range input.GroupIds {
+		idFound := false
+		for _, testSg := range securityGroups {
+			if aws.StringValue(sg) == aws.StringValue(testSg.GroupId) {
+				idFound = true
+			}
+		}
+
+		if !idFound {
+			found = false
+			break
+		}
+	}
+
+	if !found {
+		return errors.New("not found")
+	}
+
+	return nil
+}
+
+func (m mockEC2Client) AuthorizeSecurityGroupIngressWithContext(ctx context.Context, input *ec2.AuthorizeSecurityGroupIngressInput, opts ...request.Option) (*ec2.AuthorizeSecurityGroupIngressOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+
+	for _, securityGroup := range securityGroups {
+		if aws.StringValue(input.GroupId) == aws.StringValue(securityGroup.GroupId) {
+			return &ec2.AuthorizeSecurityGroupIngressOutput{Return: aws.Bool(true)}, nil
+		}
+	}
+
+	return nil, awserr.New("NotFound", "Security group not found", nil)
+}
+
+func (m mockEC2Client) AuthorizeSecurityGroupEgressWithContext(ctx context.Context, input *ec2.AuthorizeSecurityGroupEgressInput, opts ...request.Option) (*ec2.AuthorizeSecurityGroupEgressOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+
+	for _, securityGroup := range securityGroups {
+		if aws.StringValue(input.GroupId) == aws.StringValue(securityGroup.GroupId) {
+			return &ec2.AuthorizeSecurityGroupEgressOutput{Return: aws.Bool(true)}, nil
+		}
+	}
+
+	return nil, awserr.New("NotFound", "Security group not found", nil)
+}
+
+func (m mockEC2Client) RevokeSecurityGroupIngressWithContext(ctx context.Context, input *ec2.RevokeSecurityGroupIngressInput, opts ...request.Option) (*ec2.RevokeSecurityGroupIngressOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+
+	for _, securityGroup := range securityGroups {
+		if aws.StringValue(input.GroupId) == aws.StringValue(securityGroup.GroupId) {
+			return &ec2.RevokeSecurityGroupIngressOutput{Return: aws.Bool(true)}, nil
+		}
+	}
+
+	return nil, awserr.New("NotFound", "Security group not found", nil)
+}
+
+func (m mockEC2Client) RevokeSecurityGroupEgressWithContext(ctx context.Context, input *ec2.RevokeSecurityGroupEgressInput, opts ...request.Option) (*ec2.RevokeSecurityGroupEgressOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+
+	for _, securityGroup := range securityGroups {
+		if aws.StringValue(input.GroupId) == aws.StringValue(securityGroup.GroupId) {
+			return &ec2.RevokeSecurityGroupEgressOutput{Return: aws.Bool(true)}, nil
 		}
 	}
 
@@ -1010,6 +1102,597 @@ func TestEc2_DeleteSecurityGroup(t *testing.T) {
 			}
 			if err := e.DeleteSecurityGroup(tt.args.ctx, tt.args.id); (err != nil) != tt.wantErr {
 				t.Errorf("Ec2.DeleteSecurityGroup() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestEc2_WaitUntilSecurityGroupExists(t *testing.T) {
+	type fields struct {
+		session         *session.Session
+		Service         ec2iface.EC2API
+		DefaultKMSKeyId string
+		DefaultSgs      []string
+		DefaultSubnets  []string
+		org             string
+	}
+	type args struct {
+		ctx context.Context
+		id  string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name:   "empty id",
+			fields: fields{Service: newmockEC2Client(t, nil)},
+			args: args{
+				ctx: context.TODO(),
+			},
+			wantErr: true,
+		},
+		{
+			name:   "success",
+			fields: fields{Service: newmockEC2Client(t, nil)},
+			args: args{
+				ctx: context.TODO(),
+				id:  "sg-0000000001",
+			},
+		},
+		{
+			name:   "not found",
+			fields: fields{Service: newmockEC2Client(t, nil)},
+			args: args{
+				ctx: context.TODO(),
+				id:  "sg-nofound",
+			},
+			wantErr: true,
+		},
+		{
+			name:   "aws error",
+			fields: fields{Service: newmockEC2Client(t, awserr.New("BadRequest", "boom", nil))},
+			args: args{
+				ctx: context.TODO(),
+				id:  "sg-0000000001",
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Ec2{
+				session:         tt.fields.session,
+				Service:         tt.fields.Service,
+				DefaultKMSKeyId: tt.fields.DefaultKMSKeyId,
+				DefaultSgs:      tt.fields.DefaultSgs,
+				DefaultSubnets:  tt.fields.DefaultSubnets,
+				org:             tt.fields.org,
+			}
+			if err := e.WaitUntilSecurityGroupExists(tt.args.ctx, tt.args.id); (err != nil) != tt.wantErr {
+				t.Errorf("Ec2.WaitUntilSecurityGroupExists() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestEc2_AuthorizeSecurityGroup(t *testing.T) {
+	type fields struct {
+		session         *session.Session
+		Service         ec2iface.EC2API
+		DefaultKMSKeyId string
+		DefaultSgs      []string
+		DefaultSubnets  []string
+		org             string
+	}
+	type args struct {
+		ctx         context.Context
+		direction   string
+		sg          string
+		permissions []*ec2.IpPermission
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "empty direction",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx: context.TODO(),
+				sg:  "sg-0000000001",
+				permissions: []*ec2.IpPermission{
+					{
+						IpProtocol: aws.String("tcp"),
+						FromPort:   aws.Int64(-1),
+						ToPort:     aws.Int64(-1),
+						IpRanges: []*ec2.IpRange{
+							{
+								CidrIp:      aws.String("192.168.0.0/24"),
+								Description: aws.String("hax"),
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty sg",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx:       context.TODO(),
+				direction: "inbound",
+				permissions: []*ec2.IpPermission{
+					{
+						IpProtocol: aws.String("tcp"),
+						FromPort:   aws.Int64(-1),
+						ToPort:     aws.Int64(-1),
+						IpRanges: []*ec2.IpRange{
+							{
+								CidrIp:      aws.String("192.168.0.0/24"),
+								Description: aws.String("hax"),
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty permissions",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx:       context.TODO(),
+				direction: "inbound",
+				sg:        "sg-0000000001",
+			},
+			wantErr: true,
+		},
+		{
+			name: "inbound rule",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx:       context.TODO(),
+				direction: "inbound",
+				sg:        "sg-0000000001",
+				permissions: []*ec2.IpPermission{
+					{
+						IpProtocol: aws.String("tcp"),
+						FromPort:   aws.Int64(-1),
+						ToPort:     aws.Int64(-1),
+						IpRanges: []*ec2.IpRange{
+							{
+								CidrIp:      aws.String("192.168.0.0/24"),
+								Description: aws.String("hax"),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "inbound rule err",
+			fields: fields{
+				Service: newmockEC2Client(t, awserr.New("BadRequest", "boom", nil)),
+			},
+			args: args{
+				ctx:       context.TODO(),
+				direction: "inbound",
+				sg:        "sg-0000000001",
+				permissions: []*ec2.IpPermission{
+					{
+						IpProtocol: aws.String("tcp"),
+						FromPort:   aws.Int64(-1),
+						ToPort:     aws.Int64(-1),
+						IpRanges: []*ec2.IpRange{
+							{
+								CidrIp:      aws.String("192.168.0.0/24"),
+								Description: aws.String("hax"),
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "outbound rule",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx:       context.TODO(),
+				direction: "outbound",
+				sg:        "sg-0000000001",
+				permissions: []*ec2.IpPermission{
+					{
+						IpProtocol: aws.String("tcp"),
+						FromPort:   aws.Int64(-1),
+						ToPort:     aws.Int64(-1),
+						IpRanges: []*ec2.IpRange{
+							{
+								CidrIp:      aws.String("192.168.0.0/24"),
+								Description: aws.String("hax"),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "outbound rule err",
+			fields: fields{
+				Service: newmockEC2Client(t, awserr.New("BadRequest", "boom", nil)),
+			},
+			args: args{
+				ctx:       context.TODO(),
+				direction: "outbound",
+				sg:        "sg-0000000001",
+				permissions: []*ec2.IpPermission{
+					{
+						IpProtocol: aws.String("tcp"),
+						FromPort:   aws.Int64(-1),
+						ToPort:     aws.Int64(-1),
+						IpRanges: []*ec2.IpRange{
+							{
+								CidrIp:      aws.String("192.168.0.0/24"),
+								Description: aws.String("hax"),
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "bad direction",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx:       context.TODO(),
+				direction: "sideways",
+				sg:        "sg-0000000001",
+				permissions: []*ec2.IpPermission{
+					{
+						IpProtocol: aws.String("tcp"),
+						FromPort:   aws.Int64(-1),
+						ToPort:     aws.Int64(-1),
+						IpRanges: []*ec2.IpRange{
+							{
+								CidrIp:      aws.String("192.168.0.0/24"),
+								Description: aws.String("hax"),
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Ec2{
+				session:         tt.fields.session,
+				Service:         tt.fields.Service,
+				DefaultKMSKeyId: tt.fields.DefaultKMSKeyId,
+				DefaultSgs:      tt.fields.DefaultSgs,
+				DefaultSubnets:  tt.fields.DefaultSubnets,
+				org:             tt.fields.org,
+			}
+			if err := e.AuthorizeSecurityGroup(tt.args.ctx, tt.args.direction, tt.args.sg, tt.args.permissions); (err != nil) != tt.wantErr {
+				t.Errorf("Ec2.AuthorizeSecurityGroup() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestEc2_CreateSecurityGroup(t *testing.T) {
+	type fields struct {
+		session         *session.Session
+		Service         ec2iface.EC2API
+		DefaultKMSKeyId string
+		DefaultSgs      []string
+		DefaultSubnets  []string
+		org             string
+	}
+	type args struct {
+		ctx   context.Context
+		input *ec2.CreateSecurityGroupInput
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *ec2.CreateSecurityGroupOutput
+		wantErr bool
+	}{
+		{
+			name: "nil input",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args:    args{ctx: context.TODO()},
+			wantErr: true,
+		},
+		{
+			name: "good input",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx: context.TODO(),
+				input: &ec2.CreateSecurityGroupInput{
+					Description: aws.String("moar hax"),
+					GroupName:   aws.String("wide"),
+					VpcId:       aws.String("vpc-0000000020"),
+				},
+			},
+			want: &ec2.CreateSecurityGroupOutput{
+				GroupId: aws.String("sg-0000000001"),
+			},
+		},
+		{
+			name: "aws err",
+			fields: fields{
+				Service: newmockEC2Client(t, awserr.New("BadRequest", "boom", nil)),
+			},
+			args:    args{ctx: context.TODO()},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Ec2{
+				session:         tt.fields.session,
+				Service:         tt.fields.Service,
+				DefaultKMSKeyId: tt.fields.DefaultKMSKeyId,
+				DefaultSgs:      tt.fields.DefaultSgs,
+				DefaultSubnets:  tt.fields.DefaultSubnets,
+				org:             tt.fields.org,
+			}
+			got, err := e.CreateSecurityGroup(tt.args.ctx, tt.args.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Ec2.CreateSecurityGroup() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Ec2.CreateSecurityGroup() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEc2_RevokeSecurityGroup(t *testing.T) {
+	type fields struct {
+		session         *session.Session
+		Service         ec2iface.EC2API
+		DefaultKMSKeyId string
+		DefaultSgs      []string
+		DefaultSubnets  []string
+		org             string
+	}
+	type args struct {
+		ctx         context.Context
+		direction   string
+		sg          string
+		permissions []*ec2.IpPermission
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "empty direction",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx: context.TODO(),
+				sg:  "sg-0000000001",
+				permissions: []*ec2.IpPermission{
+					{
+						IpProtocol: aws.String("tcp"),
+						FromPort:   aws.Int64(-1),
+						ToPort:     aws.Int64(-1),
+						IpRanges: []*ec2.IpRange{
+							{
+								CidrIp:      aws.String("192.168.0.0/24"),
+								Description: aws.String("hax"),
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty sg",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx:       context.TODO(),
+				direction: "inbound",
+				permissions: []*ec2.IpPermission{
+					{
+						IpProtocol: aws.String("tcp"),
+						FromPort:   aws.Int64(-1),
+						ToPort:     aws.Int64(-1),
+						IpRanges: []*ec2.IpRange{
+							{
+								CidrIp:      aws.String("192.168.0.0/24"),
+								Description: aws.String("hax"),
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty permissions",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx:       context.TODO(),
+				direction: "inbound",
+				sg:        "sg-0000000001",
+			},
+			wantErr: true,
+		},
+		{
+			name: "inbound rule",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx:       context.TODO(),
+				direction: "inbound",
+				sg:        "sg-0000000001",
+				permissions: []*ec2.IpPermission{
+					{
+						IpProtocol: aws.String("tcp"),
+						FromPort:   aws.Int64(-1),
+						ToPort:     aws.Int64(-1),
+						IpRanges: []*ec2.IpRange{
+							{
+								CidrIp:      aws.String("192.168.0.0/24"),
+								Description: aws.String("hax"),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "inbound rule err",
+			fields: fields{
+				Service: newmockEC2Client(t, awserr.New("BadRequest", "boom", nil)),
+			},
+			args: args{
+				ctx:       context.TODO(),
+				direction: "inbound",
+				sg:        "sg-0000000001",
+				permissions: []*ec2.IpPermission{
+					{
+						IpProtocol: aws.String("tcp"),
+						FromPort:   aws.Int64(-1),
+						ToPort:     aws.Int64(-1),
+						IpRanges: []*ec2.IpRange{
+							{
+								CidrIp:      aws.String("192.168.0.0/24"),
+								Description: aws.String("hax"),
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "outbound rule",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx:       context.TODO(),
+				direction: "outbound",
+				sg:        "sg-0000000001",
+				permissions: []*ec2.IpPermission{
+					{
+						IpProtocol: aws.String("tcp"),
+						FromPort:   aws.Int64(-1),
+						ToPort:     aws.Int64(-1),
+						IpRanges: []*ec2.IpRange{
+							{
+								CidrIp:      aws.String("192.168.0.0/24"),
+								Description: aws.String("hax"),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "outbound rule err",
+			fields: fields{
+				Service: newmockEC2Client(t, awserr.New("BadRequest", "boom", nil)),
+			},
+			args: args{
+				ctx:       context.TODO(),
+				direction: "outbound",
+				sg:        "sg-0000000001",
+				permissions: []*ec2.IpPermission{
+					{
+						IpProtocol: aws.String("tcp"),
+						FromPort:   aws.Int64(-1),
+						ToPort:     aws.Int64(-1),
+						IpRanges: []*ec2.IpRange{
+							{
+								CidrIp:      aws.String("192.168.0.0/24"),
+								Description: aws.String("hax"),
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "bad direction",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx:       context.TODO(),
+				direction: "sideways",
+				sg:        "sg-0000000001",
+				permissions: []*ec2.IpPermission{
+					{
+						IpProtocol: aws.String("tcp"),
+						FromPort:   aws.Int64(-1),
+						ToPort:     aws.Int64(-1),
+						IpRanges: []*ec2.IpRange{
+							{
+								CidrIp:      aws.String("192.168.0.0/24"),
+								Description: aws.String("hax"),
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Ec2{
+				session:         tt.fields.session,
+				Service:         tt.fields.Service,
+				DefaultKMSKeyId: tt.fields.DefaultKMSKeyId,
+				DefaultSgs:      tt.fields.DefaultSgs,
+				DefaultSubnets:  tt.fields.DefaultSubnets,
+				org:             tt.fields.org,
+			}
+			if err := e.RevokeSecurityGroup(tt.args.ctx, tt.args.direction, tt.args.sg, tt.args.permissions); (err != nil) != tt.wantErr {
+				t.Errorf("Ec2.RevokeSecurityGroup() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

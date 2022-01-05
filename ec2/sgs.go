@@ -9,6 +9,23 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func (e *Ec2) CreateSecurityGroup(ctx context.Context, input *ec2.CreateSecurityGroupInput) (*ec2.CreateSecurityGroupOutput, error) {
+	if input == nil {
+		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	log.Infof("creating security group %s in vpc %s", aws.StringValue(input.GroupName), aws.StringValue(input.VpcId))
+
+	out, err := e.Service.CreateSecurityGroupWithContext(ctx, input)
+	if err != nil {
+		return nil, ErrCode("failed to create security group", err)
+	}
+
+	log.Debugf("got output creating security group %+v", out)
+
+	return out, nil
+}
+
 // ListSecurityGroups List all security groups in an aws account
 func (e *Ec2) ListSecurityGroups(ctx context.Context, org string) ([]map[string]*string, error) {
 	log.Infof("listing ec2 security groups (org: '%s')", org)
@@ -80,6 +97,110 @@ func (e *Ec2) DeleteSecurityGroup(ctx context.Context, id string) error {
 		GroupId: aws.String(id),
 	}); err != nil {
 		return ErrCode("deleting security group", err)
+	}
+
+	return nil
+}
+
+func (e *Ec2) WaitUntilSecurityGroupExists(ctx context.Context, id string) error {
+	if id == "" {
+		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	log.Infof("waiting for %s to exist", id)
+
+	if err := e.Service.WaitUntilSecurityGroupExistsWithContext(ctx, &ec2.DescribeSecurityGroupsInput{
+		GroupIds: aws.StringSlice([]string{id}),
+	}); err != nil {
+		return ErrCode("waiting for security group to exist", err)
+	}
+
+	return nil
+}
+
+func (e *Ec2) AuthorizeSecurityGroup(ctx context.Context, direction, sg string, permissions []*ec2.IpPermission) error {
+	if direction == "" || sg == "" || permissions == nil {
+		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	log.Infof("Authorizing security group %s for %s", direction, sg)
+
+	switch direction {
+	case "outbound":
+		out, err := e.Service.AuthorizeSecurityGroupEgressWithContext(ctx, &ec2.AuthorizeSecurityGroupEgressInput{
+			GroupId:       aws.String(sg),
+			IpPermissions: permissions,
+		})
+		if err != nil {
+			return ErrCode("failed authorizing egress", err)
+		}
+
+		log.Debugf("got output authorizing security group egress: %+v", out)
+
+		if !aws.BoolValue(out.Return) {
+			return apierror.New(apierror.ErrBadRequest, "security group authorization rule failed", nil)
+		}
+
+	case "inbound":
+		out, err := e.Service.AuthorizeSecurityGroupIngressWithContext(ctx, &ec2.AuthorizeSecurityGroupIngressInput{
+			GroupId:       aws.String(sg),
+			IpPermissions: permissions,
+		})
+		if err != nil {
+			return ErrCode("failed authorizing ingress", err)
+		}
+
+		log.Debugf("got output authorizing security group ingress: %+v", out)
+
+		if !aws.BoolValue(out.Return) {
+			return apierror.New(apierror.ErrBadRequest, "security group authorization rule failed", nil)
+		}
+	default:
+		return apierror.New(apierror.ErrBadRequest, "direction is required to be [outbound|inbound]", nil)
+	}
+
+	return nil
+}
+
+func (e *Ec2) RevokeSecurityGroup(ctx context.Context, direction, sg string, permissions []*ec2.IpPermission) error {
+	if direction == "" || sg == "" || permissions == nil {
+		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	log.Infof("Revoking security group %s for %s", direction, sg)
+
+	switch direction {
+	case "outbound":
+		out, err := e.Service.RevokeSecurityGroupEgressWithContext(ctx, &ec2.RevokeSecurityGroupEgressInput{
+			GroupId:       aws.String(sg),
+			IpPermissions: permissions,
+		})
+		if err != nil {
+			return ErrCode("failed revoking egress", err)
+		}
+
+		log.Debugf("got output authorizing security group egress: %+v", out)
+
+		if !aws.BoolValue(out.Return) {
+			return apierror.New(apierror.ErrBadRequest, "security group revoke rule failed", nil)
+		}
+
+	case "inbound":
+		out, err := e.Service.RevokeSecurityGroupIngressWithContext(ctx, &ec2.RevokeSecurityGroupIngressInput{
+			GroupId:       aws.String(sg),
+			IpPermissions: permissions,
+		})
+		if err != nil {
+			return ErrCode("failed revoking egress", err)
+		}
+
+		log.Debugf("got output authorizing security group ingress: %+v", out)
+
+		if !aws.BoolValue(out.Return) {
+			return apierror.New(apierror.ErrBadRequest, "security group revoke rule failed", nil)
+		}
+	default:
+		return apierror.New(apierror.ErrBadRequest, "direction is required to be [outbound|enbound]", nil)
 	}
 
 	return nil

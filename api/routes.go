@@ -59,7 +59,7 @@ func (s *server) routes() {
 
 	api.HandleFunc("/{account}/instances", s.ProxyRequestHandler).Methods(http.MethodPost)
 	api.HandleFunc("/{account}/instances/{id}/volumes", s.ProxyRequestHandler).Methods(http.MethodPost)
-	api.HandleFunc("/{account}/sgs", s.ProxyRequestHandler).Methods(http.MethodPost)
+	api.HandleFunc("/{account}/sgs", s.SecurityGroupCreateHandler).Methods(http.MethodPost)
 	api.HandleFunc("/{account}/volumes", s.ProxyRequestHandler).Methods(http.MethodPost)
 	api.HandleFunc("/{account}/snapshots", s.ProxyRequestHandler).Methods(http.MethodPost)
 	api.HandleFunc("/{account}/images", s.ProxyRequestHandler).Methods(http.MethodPost)
@@ -71,7 +71,7 @@ func (s *server) routes() {
 	api.HandleFunc("/{account}/instances/{id}/ssm/association", s.ProxyRequestHandler).Methods(http.MethodPut)
 	api.HandleFunc("/{account}/instances/{id}/tags", s.ProxyRequestHandler).Methods(http.MethodPut)
 	api.HandleFunc("/{account}/instances/{id}/attribute", s.ProxyRequestHandler).Methods(http.MethodPut)
-	api.HandleFunc("/{account}/sgs/{id}", s.ProxyRequestHandler).Methods(http.MethodPut)
+	api.HandleFunc("/{account}/sgs/{id}", s.SecurityGroupUpdateHandler).Methods(http.MethodPut)
 	api.HandleFunc("/{account}/sgs/{id}/tags", s.ProxyRequestHandler).Methods(http.MethodPut)
 	api.HandleFunc("/{account}/volumes/{id}", s.ProxyRequestHandler).Methods(http.MethodPut)
 	api.HandleFunc("/{account}/volumes/{id}/tags", s.ProxyRequestHandler).Methods(http.MethodPut)
