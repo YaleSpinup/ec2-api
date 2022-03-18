@@ -112,3 +112,82 @@ func (s *server) VolumeGetHandler(w http.ResponseWriter, r *http.Request) {
 
 	handleResponseOk(w, toEc2VolumeResponse(out[0]))
 }
+
+func (s *server) VolumeListModificationsHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	id := vars["id"]
+
+	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
+
+	session, err := s.assumeRole(
+		r.Context(),
+		s.session.ExternalID,
+		role,
+		"",
+		"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+	)
+	if err != nil {
+		msg := fmt.Sprintf("failed to assume role in account: %s", account)
+		handleError(w, apierror.New(apierror.ErrForbidden, msg, err))
+		return
+	}
+
+	service := ec2.New(
+		ec2.WithSession(session.Session),
+		ec2.WithOrg(s.org),
+	)
+
+	out, err := service.ListVolumeModifications(r.Context(), id)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	w.Header().Set("X-Items", strconv.Itoa(len(out)))
+
+	handleResponseOk(w, toEc2VolumeModificationsResponse(out))
+}
+
+func (s *server) VolumeListSnapshotsHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	id := vars["id"]
+
+	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
+
+	session, err := s.assumeRole(
+		r.Context(),
+		s.session.ExternalID,
+		role,
+		"",
+		"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+	)
+	if err != nil {
+		msg := fmt.Sprintf("failed to assume role in account: %s", account)
+		handleError(w, apierror.New(apierror.ErrForbidden, msg, err))
+		return
+	}
+
+	service := ec2.New(
+		ec2.WithSession(session.Session),
+		ec2.WithOrg(s.org),
+	)
+
+	out, err := service.ListVolumeSnapshots(r.Context(), id)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	list := make([]map[string]string, 0, len(out))
+	for _, s := range out {
+		list = append(list, map[string]string{"id": s})
+	}
+
+	w.Header().Set("X-Items", strconv.Itoa(len(out)))
+
+	handleResponseOk(w, list)
+}

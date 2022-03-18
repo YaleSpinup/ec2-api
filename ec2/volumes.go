@@ -66,3 +66,81 @@ func (e *Ec2) GetVolume(ctx context.Context, ids ...string) ([]*ec2.Volume, erro
 
 	return out.Volumes, nil
 }
+
+// ListVolumeModifications returns the modifications events for a volume
+func (e *Ec2) ListVolumeModifications(ctx context.Context, id string) ([]*ec2.VolumeModification, error) {
+	if id == "" {
+		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	log.Infof("getting modifications for volume %s", id)
+
+	modifications := []*ec2.VolumeModification{}
+
+	input := ec2.DescribeVolumesModificationsInput{
+		Filters: []*ec2.Filter{
+			withVolumeId(id),
+		},
+		MaxResults: aws.Int64(500),
+	}
+
+	for {
+		out, err := e.Service.DescribeVolumesModificationsWithContext(ctx, &input)
+		if err != nil {
+			return nil, ErrCode("describing modifications for volume", err)
+		}
+
+		log.Debugf("got describe volume modifications output %+v", out)
+
+		modifications = append(modifications, out.VolumesModifications...)
+
+		if out.NextToken != nil {
+			input.NextToken = out.NextToken
+			continue
+		}
+
+		break
+	}
+
+	return modifications, nil
+}
+
+// ListVolumeSnapshots returns the snapshots for a volume
+func (e *Ec2) ListVolumeSnapshots(ctx context.Context, id string) ([]string, error) {
+	if id == "" {
+		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	log.Infof("getting snapshots for volume %s", id)
+
+	snapshots := []string{}
+
+	input := ec2.DescribeSnapshotsInput{
+		Filters: []*ec2.Filter{
+			withVolumeId(id),
+		},
+		MaxResults: aws.Int64(1000),
+	}
+
+	for {
+		out, err := e.Service.DescribeSnapshotsWithContext(ctx, &input)
+		if err != nil {
+			return nil, ErrCode("describing snapshots for volume", err)
+		}
+
+		log.Debugf("got describe volume snapshots output %+v", out)
+
+		for _, s := range out.Snapshots {
+			snapshots = append(snapshots, aws.StringValue(s.SnapshotId))
+		}
+
+		if out.NextToken != nil {
+			input.NextToken = out.NextToken
+			continue
+		}
+
+		break
+	}
+
+	return snapshots, nil
+}

@@ -49,6 +49,15 @@ func withInstanceId(id string) *ec2.Filter {
 	}
 }
 
+func withVolumeId(id string) *ec2.Filter {
+	return &ec2.Filter{
+		Name: aws.String("volume-id"),
+		Values: aws.StringSlice(
+			[]string{id},
+		),
+	}
+}
+
 func isAvailable() *ec2.Filter {
 	return &ec2.Filter{
 		Name: aws.String("state"),

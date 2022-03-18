@@ -290,6 +290,76 @@ func Test_toEc2InstanceResponse(t *testing.T) {
 	}
 }
 
+func Test_toEc2VolumeModificationsResponse(t *testing.T) {
+	testTime, err := time.Parse("2006-01-02 15:04:05 -0700 MST", "2022-02-22 22:22:22 +0000 UTC")
+	if err != nil {
+		t.Errorf("failed to parse time: %s", err)
+	}
+
+	type args struct {
+		modifications []*ec2.VolumeModification
+	}
+	tests := []struct {
+		name string
+		args args
+		want []Ec2VolumeModification
+	}{
+		{
+			name: "nil input",
+			args: args{modifications: nil},
+			want: nil,
+		},
+		{
+			name: "regular input",
+			args: args{modifications: []*ec2.VolumeModification{
+				{
+					EndTime:                    aws.Time(testTime),
+					ModificationState:          aws.String("completed"),
+					OriginalIops:               aws.Int64(3000),
+					OriginalMultiAttachEnabled: aws.Bool(false),
+					OriginalSize:               aws.Int64(8),
+					OriginalThroughput:         aws.Int64(125),
+					OriginalVolumeType:         aws.String("gp3"),
+					Progress:                   aws.Int64(100),
+					StartTime:                  aws.Time(testTime),
+					TargetIops:                 aws.Int64(3000),
+					TargetMultiAttachEnabled:   aws.Bool(false),
+					TargetSize:                 aws.Int64(100),
+					TargetThroughput:           aws.Int64(125),
+					TargetVolumeType:           aws.String("gp3"),
+					VolumeId:                   aws.String("vol-0123456789abcdef0"),
+				},
+			}},
+			want: []Ec2VolumeModification{
+				{
+					EndTime:                    "2022-02-22 22:22:22 UTC",
+					ModificationState:          "completed",
+					OriginalIops:               3000,
+					OriginalMultiAttachEnabled: false,
+					OriginalSize:               8,
+					OriginalThroughput:         125,
+					OriginalVolumeType:         "gp3",
+					Progress:                   100,
+					StartTime:                  "2022-02-22 22:22:22 UTC",
+					TargetIops:                 3000,
+					TargetMultiAttachEnabled:   false,
+					TargetSize:                 100,
+					TargetThroughput:           125,
+					TargetVolumeType:           "gp3",
+					VolumeId:                   "vol-0123456789abcdef0",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := toEc2VolumeModificationsResponse(tt.args.modifications); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("toEc2VolumeModificationsResponse() = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}
+
 func Test_toEc2VolumeResponse(t *testing.T) {
 	type args struct {
 		volume *ec2.Volume
