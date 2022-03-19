@@ -310,7 +310,7 @@ func Test_toEc2VolumeModificationsResponse(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "regular input",
+			name: "modification completed",
 			args: args{modifications: []*ec2.VolumeModification{
 				{
 					EndTime:                    aws.Time(testTime),
@@ -350,7 +350,48 @@ func Test_toEc2VolumeModificationsResponse(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "modification in progress",
+			args: args{modifications: []*ec2.VolumeModification{
+				{
+					ModificationState:          aws.String("optimizing"),
+					OriginalIops:               aws.Int64(3000),
+					OriginalMultiAttachEnabled: aws.Bool(false),
+					OriginalSize:               aws.Int64(8),
+					OriginalThroughput:         aws.Int64(125),
+					OriginalVolumeType:         aws.String("gp3"),
+					Progress:                   aws.Int64(0),
+					StartTime:                  aws.Time(testTime),
+					TargetIops:                 aws.Int64(3000),
+					TargetMultiAttachEnabled:   aws.Bool(false),
+					TargetSize:                 aws.Int64(100),
+					TargetThroughput:           aws.Int64(125),
+					TargetVolumeType:           aws.String("gp3"),
+					VolumeId:                   aws.String("vol-0123456789abcdef0"),
+				},
+			}},
+			want: []Ec2VolumeModification{
+				{
+					EndTime:                    "",
+					ModificationState:          "optimizing",
+					OriginalIops:               3000,
+					OriginalMultiAttachEnabled: false,
+					OriginalSize:               8,
+					OriginalThroughput:         125,
+					OriginalVolumeType:         "gp3",
+					Progress:                   0,
+					StartTime:                  "2022-02-22 22:22:22 UTC",
+					TargetIops:                 3000,
+					TargetMultiAttachEnabled:   false,
+					TargetSize:                 100,
+					TargetThroughput:           125,
+					TargetVolumeType:           "gp3",
+					VolumeId:                   "vol-0123456789abcdef0",
+				},
+			},
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := toEc2VolumeModificationsResponse(tt.args.modifications); !reflect.DeepEqual(got, tt.want) {

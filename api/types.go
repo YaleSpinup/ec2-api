@@ -24,6 +24,10 @@ func timeFormat(t *time.Time) string {
 // tzTimeFormat returns the time format with a TZ used in a few places
 // TODO get rid of these places
 func tzTimeFormat(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+
 	return t.UTC().Format("2006-01-02 15:04:05 MST")
 }
 
