@@ -24,6 +24,10 @@ func timeFormat(t *time.Time) string {
 // tzTimeFormat returns the time format with a TZ used in a few places
 // TODO get rid of these places
 func tzTimeFormat(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+
 	return t.UTC().Format("2006-01-02 15:04:05 MST")
 }
 
@@ -197,6 +201,58 @@ func toEc2VolumeResponse(volume *ec2.Volume) *Ec2VolumeResponse {
 		Attachments: attachments,
 	}
 	return &response
+}
+
+type Ec2VolumeModification struct {
+	EndTime                    string `json:"end_time"`
+	ModificationState          string `json:"modification_state"`
+	OriginalIops               int64  `json:"original_iops"`
+	OriginalMultiAttachEnabled bool   `json:"original_multi_attach_enabled"`
+	OriginalSize               int64  `json:"original_size"`
+	OriginalThroughput         int64  `json:"original_throughput"`
+	OriginalVolumeType         string `json:"original_volume_type"`
+	Progress                   int64  `json:"progress"`
+	StartTime                  string `json:"start_time"`
+	StatusMessage              string `json:"status_message"`
+	TargetIops                 int64  `json:"target_iops"`
+	TargetMultiAttachEnabled   bool   `json:"target_multi_attach_enabled"`
+	TargetSize                 int64  `json:"target_size"`
+	TargetThroughput           int64  `json:"target_throughput"`
+	TargetVolumeType           string `json:"target_volume_type"`
+	VolumeId                   string `json:"volume_id"`
+}
+
+func toEc2VolumeModificationsResponse(modifications []*ec2.VolumeModification) []Ec2VolumeModification {
+	if modifications == nil {
+		return nil
+	}
+
+	log.Debugf("mapping ec2 volume modifications %s", awsutil.Prettify(modifications))
+
+	response := []Ec2VolumeModification{}
+
+	for _, m := range modifications {
+		response = append(response, Ec2VolumeModification{
+			EndTime:                    tzTimeFormat(m.EndTime),
+			ModificationState:          aws.StringValue(m.ModificationState),
+			OriginalIops:               aws.Int64Value(m.OriginalIops),
+			OriginalMultiAttachEnabled: aws.BoolValue(m.OriginalMultiAttachEnabled),
+			OriginalSize:               aws.Int64Value(m.OriginalSize),
+			OriginalThroughput:         aws.Int64Value(m.OriginalThroughput),
+			OriginalVolumeType:         aws.StringValue(m.OriginalVolumeType),
+			Progress:                   aws.Int64Value(m.Progress),
+			StartTime:                  tzTimeFormat(m.StartTime),
+			StatusMessage:              aws.StringValue(m.StatusMessage),
+			TargetIops:                 aws.Int64Value(m.TargetIops),
+			TargetMultiAttachEnabled:   aws.BoolValue(m.TargetMultiAttachEnabled),
+			TargetSize:                 aws.Int64Value(m.TargetSize),
+			TargetThroughput:           aws.Int64Value(m.TargetThroughput),
+			TargetVolumeType:           aws.StringValue(m.TargetVolumeType),
+			VolumeId:                   aws.StringValue(m.VolumeId),
+		})
+	}
+
+	return response
 }
 
 type Ec2SnapshotResponse struct {

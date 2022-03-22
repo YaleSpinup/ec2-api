@@ -96,6 +96,35 @@ func Test_withInstanceId(t *testing.T) {
 	}
 }
 
+func Test_withVolumeId(t *testing.T) {
+	type args struct {
+		id string
+	}
+	tests := []struct {
+		name string
+		args args
+		want *ec2.Filter
+	}{
+		{
+			name: "with volume id",
+			args: args{id: "vol-0123456789abcdef0"},
+			want: &ec2.Filter{
+				Name: aws.String("volume-id"),
+				Values: aws.StringSlice(
+					[]string{"vol-0123456789abcdef0"},
+				),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := withVolumeId(tt.args.id); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("withVolumeId() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func Test_inVpc(t *testing.T) {
 	type args struct {
 		vpc string
