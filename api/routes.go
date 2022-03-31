@@ -57,7 +57,7 @@ func (s *server) routes() {
 	api.HandleFunc("/{account}/vpcs", s.VpcListHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/vpcs/{id}", s.ProxyRequestHandler).Methods(http.MethodGet)
 
-	api.HandleFunc("/{account}/instances", s.ProxyRequestHandler).Methods(http.MethodPost)
+	api.HandleFunc("/{account}/instances", s.InstanceCreateHandler).Methods(http.MethodPost)
 	api.HandleFunc("/{account}/instances/{id}/volumes", s.ProxyRequestHandler).Methods(http.MethodPost)
 	api.HandleFunc("/{account}/sgs", s.SecurityGroupCreateHandler).Methods(http.MethodPost)
 	api.HandleFunc("/{account}/volumes", s.ProxyRequestHandler).Methods(http.MethodPost)

@@ -31,6 +31,29 @@ func tzTimeFormat(t *time.Time) string {
 	return t.UTC().Format("2006-01-02 15:04:05 MST")
 }
 
+type Ec2InstanceCreateRequest struct {
+	Type            *string          `json:"type"`
+	Image           *string          `json:"image"`
+	Subnet          *string          `json:"subnet"`
+	Sgs             []*string        `json:"sgs"`
+	CpuCredits      *string          `json:"cpu_credits"`
+	InstanceProfile *string          `json:"instanceprofile"`
+	Key             *string          `json:"key"`
+	Userdata64      *string          `json:"userdata64"`
+	BlockDevices    []Ec2BlockDevice `json:"block_devices"`
+}
+
+type Ec2BlockDevice struct {
+	DeviceName *string       `json:"device_name"`
+	Ebs        *Ec2EbsVolume `json:"ebs"`
+}
+
+type Ec2EbsVolume struct {
+	Encrypted  *bool   `json:"encrypted"`
+	VolumeSize *int64  `json:"volume_size"`
+	VolumeType *string `json:"volume_type"`
+}
+
 type Volume struct {
 	AttachTime          string `json:"attach_time"`
 	DeleteOnTermination bool   `json:"delete_on_termination"`

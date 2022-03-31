@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -26,6 +27,118 @@ func (m *mockEC2Client) DescribeInstancesWithContext(ctx context.Context, input 
 	}
 
 	return nil, nil
+}
+
+func (m mockEC2Client) RunInstancesWithContext(ctx context.Context, input *ec2.RunInstancesInput, opts ...request.Option) (*ec2.Reservation, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+
+	// return multiple Instances (unexpected)
+	if aws.StringValue(input.InstanceType) == "t3.weird" {
+		return &ec2.Reservation{
+			Instances: []*ec2.Instance{
+				{InstanceId: aws.String("i-0123456789abcdef0")},
+				{InstanceId: aws.String("i-0123456789abcdef1")},
+				{InstanceId: aws.String("i-0123456789abcdef2")},
+			},
+		}, nil
+	}
+
+	return &ec2.Reservation{
+		Instances: []*ec2.Instance{
+			{InstanceId: aws.String("i-0123456789abcdef0")},
+		},
+	}, nil
+}
+
+func TestEc2_CreateInstance(t *testing.T) {
+	type fields struct {
+		session         *session.Session
+		Service         ec2iface.EC2API
+		DefaultKMSKeyId string
+		DefaultSgs      []string
+		DefaultSubnets  []string
+		org             string
+	}
+	type args struct {
+		ctx   context.Context
+		input *ec2.RunInstancesInput
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *ec2.Instance
+		wantErr bool
+	}{
+		{
+			name: "nil input",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args:    args{ctx: context.TODO()},
+			wantErr: true,
+		},
+		{
+			name: "unexpected output",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx: context.TODO(),
+				input: &ec2.RunInstancesInput{
+					InstanceType: aws.String("t3.weird"),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "good input",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx: context.TODO(),
+				input: &ec2.RunInstancesInput{
+					InstanceType: aws.String("t3.nano"),
+				},
+			},
+			want: &ec2.Instance{
+				InstanceId: aws.String("i-0123456789abcdef0"),
+			},
+		},
+		{
+			name: "aws err",
+			fields: fields{
+				Service: newmockEC2Client(t, awserr.New("BadRequest", "boom", nil)),
+			},
+			args:    args{ctx: context.TODO()},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Ec2{
+				session:         tt.fields.session,
+				Service:         tt.fields.Service,
+				DefaultKMSKeyId: tt.fields.DefaultKMSKeyId,
+				DefaultSgs:      tt.fields.DefaultSgs,
+				DefaultSubnets:  tt.fields.DefaultSubnets,
+				org:             tt.fields.org,
+			}
+			got, err := e.CreateInstance(tt.args.ctx, tt.args.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Ec2.CreateInstance() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Ec2.CreateInstance() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestEc2_GetInstance(t *testing.T) {
