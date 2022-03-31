@@ -47,6 +47,31 @@ func instanceCreatePolicy() (string, error) {
 				Effect: "Allow",
 				Action: []string{
 					"ec2:RunInstances",
+					"iam:PassRole",
+				},
+				Resource: []string{"*"},
+			},
+		},
+	}
+
+	j, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+
+	return string(j), nil
+}
+
+func instanceDeletePolicy(id string) (string, error) {
+	log.Debugf("generating instance delete policy document")
+
+	policy := iam.PolicyDocument{
+		Version: "2012-10-17",
+		Statement: []iam.StatementEntry{
+			{
+				Effect: "Allow",
+				Action: []string{
+					"ec2:TerminateInstances",
 				},
 				Resource: []string{"*"},
 			},
