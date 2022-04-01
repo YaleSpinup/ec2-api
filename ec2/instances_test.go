@@ -52,6 +52,14 @@ func (m mockEC2Client) RunInstancesWithContext(ctx context.Context, input *ec2.R
 	}, nil
 }
 
+func (m mockEC2Client) TerminateInstancesWithContext(ctx context.Context, input *ec2.TerminateInstancesInput, opts ...request.Option) (*ec2.TerminateInstancesOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+
+	return &ec2.TerminateInstancesOutput{}, nil
+}
+
 func TestEc2_CreateInstance(t *testing.T) {
 	type fields struct {
 		session         *session.Session
@@ -136,6 +144,73 @@ func TestEc2_CreateInstance(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Ec2.CreateInstance() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEc2_DeleteInstance(t *testing.T) {
+	type fields struct {
+		session         *session.Session
+		Service         ec2iface.EC2API
+		DefaultKMSKeyId string
+		DefaultSgs      []string
+		DefaultSubnets  []string
+		org             string
+	}
+	type args struct {
+		ctx   context.Context
+		input string
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "nil input",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args:    args{ctx: context.TODO()},
+			wantErr: true,
+		},
+		{
+			name: "good input",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx:   context.TODO(),
+				input: "i-0123456789abcdef0",
+			},
+		},
+		{
+			name: "aws err",
+			fields: fields{
+				Service: newmockEC2Client(t, awserr.New("BadRequest", "boom", nil)),
+			},
+			args:    args{ctx: context.TODO()},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Ec2{
+				session:         tt.fields.session,
+				Service:         tt.fields.Service,
+				DefaultKMSKeyId: tt.fields.DefaultKMSKeyId,
+				DefaultSgs:      tt.fields.DefaultSgs,
+				DefaultSubnets:  tt.fields.DefaultSubnets,
+				org:             tt.fields.org,
+			}
+			err := e.DeleteInstance(tt.args.ctx, tt.args.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Ec2.DeleteInstance() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
 		})
 	}

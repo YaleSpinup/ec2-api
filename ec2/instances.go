@@ -31,6 +31,28 @@ func (e *Ec2) CreateInstance(ctx context.Context, input *ec2.RunInstancesInput) 
 	return out.Instances[0], nil
 }
 
+// DeleteInstance terminates an instance
+func (e *Ec2) DeleteInstance(ctx context.Context, id string) error {
+	if id == "" {
+		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	log.Infof("deleting instance %s", id)
+
+	out, err := e.Service.TerminateInstancesWithContext(ctx, &ec2.TerminateInstancesInput{
+		InstanceIds: []*string{
+			aws.String(id),
+		},
+	})
+	if err != nil {
+		return ErrCode("failed to delete instance", err)
+	}
+
+	log.Debugf("got output deleting instance: %+v", out)
+
+	return nil
+}
+
 // ListInstances lists the instances that are not terminated and not spot
 func (e *Ec2) ListInstances(ctx context.Context, org string, per int64, next *string) ([]map[string]*string, *string, error) {
 	log.Infof("listing ec2 instances")

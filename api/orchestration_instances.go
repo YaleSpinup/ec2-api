@@ -59,6 +59,20 @@ func (o *ec2Orchestrator) createInstance(ctx context.Context, req *Ec2InstanceCr
 	return aws.StringValue(out.InstanceId), nil
 }
 
+func (o *ec2Orchestrator) deleteInstance(ctx context.Context, id string) error {
+	if id == "" {
+		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	log.Debugf("got request to delete instance %s", id)
+
+	if err := o.ec2Client.DeleteInstance(ctx, id); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func blockDeviceMappingsFromRequest(r []Ec2BlockDevice) []*ec2.BlockDeviceMapping {
 	blockDeviceMappings := []*ec2.BlockDeviceMapping{}
 
