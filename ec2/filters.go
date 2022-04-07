@@ -66,3 +66,12 @@ func isAvailable() *ec2.Filter {
 		),
 	}
 }
+
+func withVPCID(id string) *ec2.Filter {
+	return &ec2.Filter{
+		Name: aws.String("vpc-id"),
+		Values: aws.StringSlice(
+			[]string{id},
+		),
+	}
+}

@@ -2,6 +2,7 @@ package ec2
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -27,4 +28,19 @@ func (e *Ec2) ListVPCs(ctx context.Context) ([]map[string]string, error) {
 	}
 
 	return vpcs, nil
+}
+
+func (e *Ec2) GetVPCsByID(ctx context.Context, id string) (*ec2.Vpc, error) {
+	out, err := e.Service.DescribeVpcsWithContext(ctx, &ec2.DescribeVpcsInput{
+		Filters: []*ec2.Filter{
+			withVPCID(id),
+		},
+	})
+	if err != nil {
+		return nil, ErrCode("describing vpc", err)
+	}
+	if len(out.Vpcs) == 0 {
+		return nil, fmt.Errorf("cannot find vpc with id -> %s", id)
+	}
+	return out.Vpcs[0], nil
 }

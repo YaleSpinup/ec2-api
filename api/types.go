@@ -537,3 +537,33 @@ func toEc2SecurityGroupResponse(sg *ec2.SecurityGroup) *Ec2SecurityGroupResponse
 		VpcId:         aws.StringValue(sg.VpcId),
 	}
 }
+
+type Ec2VpcResponse struct {
+	Id              string            `json:"id"`
+	CIDRBlock       string            `json:"cidr_block"`
+	DHCPOptionsId   string            `json:"dhcp_options_id"`
+	State           string            `json:"state"`
+	InstanceTenancy string            `json:"instance_tenancy"`
+	IsDefault       bool              `json:"is_default"`
+	Tags            map[string]string `json:"tags"`
+}
+
+func toEc2VpcResponse(vpc *ec2.Vpc) *Ec2VpcResponse {
+	return &Ec2VpcResponse{
+		Id:              aws.StringValue(vpc.VpcId),
+		CIDRBlock:       aws.StringValue(vpc.CidrBlock),
+		DHCPOptionsId:   aws.StringValue(vpc.DhcpOptionsId),
+		State:           aws.StringValue(vpc.State),
+		InstanceTenancy: aws.StringValue(vpc.InstanceTenancy),
+		IsDefault:       aws.BoolValue(vpc.IsDefault),
+		Tags:            tagsMap(vpc.Tags),
+	}
+}
+
+func tagsMap(tags []*ec2.Tag) map[string]string {
+	mp := make(map[string]string)
+	for _, t := range tags {
+		mp[aws.StringValue(t.Key)] = aws.StringValue(t.Value)
+	}
+	return mp
+}
