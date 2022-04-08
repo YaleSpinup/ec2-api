@@ -44,7 +44,6 @@ func (m *mockEC2Client) DescribeVpcsWithContext(ctx context.Context, input *ec2.
 	if m.err != nil {
 		return nil, m.err
 	}
-
 	if input.VpcIds == nil {
 		return &ec2.DescribeVpcsOutput{Vpcs: testVpcs}, nil
 	}
@@ -112,6 +111,69 @@ func TestEc2_ListVPCs(t *testing.T) {
 				org:             tt.fields.org,
 			}
 			got, err := e.ListVPCs(tt.args.ctx)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Ec2.ListVPCs() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Ec2.ListVPCs() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEc2_GetVpcById(t *testing.T) {
+	type fields struct {
+		session         *session.Session
+		Service         ec2iface.EC2API
+		DefaultKMSKeyId string
+		DefaultSgs      []string
+		DefaultSubnets  []string
+		org             string
+	}
+	type args struct {
+		ctx context.Context
+		id  string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *ec2.Vpc
+		wantErr bool
+	}{
+		{
+			name:   "valid vpc",
+			fields: fields{Service: newmockEC2Client(t, nil)},
+			args:   args{ctx: context.TODO(), id: "vpc-a1a1qa1a1"},
+			want:   testVpcs[0],
+		},
+		{
+			name:    "unknown vpc",
+			fields:  fields{Service: newmockEC2Client(t, nil)},
+			args:    args{ctx: context.TODO(), id: "vpc-a33323334"},
+			wantErr: true,
+		},
+		{
+			name: "aws error",
+			args: args{
+				ctx: context.TODO(),
+			},
+			fields:  fields{Service: newmockEC2Client(t, awserr.New("Bad Request", "boom.", nil))},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Ec2{
+				session:         tt.fields.session,
+				Service:         tt.fields.Service,
+				DefaultKMSKeyId: tt.fields.DefaultKMSKeyId,
+				DefaultSgs:      tt.fields.DefaultSgs,
+				DefaultSubnets:  tt.fields.DefaultSubnets,
+				org:             tt.fields.org,
+			}
+			got, err := e.GetVPCByID(tt.args.ctx, tt.args.id)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Ec2.ListVPCs() error = %v, wantErr %v", err, tt.wantErr)
 				return

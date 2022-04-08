@@ -46,7 +46,7 @@ func (s *server) VpcListHandler(w http.ResponseWriter, r *http.Request) {
 	handleResponseOk(w, out)
 }
 
-func (s *server) VpcByIdHandler(w http.ResponseWriter, r *http.Request) {
+func (s *server) VpcShowHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
 	account := s.mapAccountNumber(vars["account"])
@@ -77,7 +77,7 @@ func (s *server) VpcByIdHandler(w http.ResponseWriter, r *http.Request) {
 		ec2.WithOrg(s.org),
 	)
 
-	out, err := service.GetVPCsByID(r.Context(), id)
+	out, err := service.GetVPCByID(r.Context(), id)
 	if err != nil {
 		handleError(w, err)
 		return
