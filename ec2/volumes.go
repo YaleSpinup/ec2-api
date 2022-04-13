@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/YaleSpinup/apierror"
+	"github.com/YaleSpinup/ec2-api/common"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	log "github.com/sirupsen/logrus"
@@ -31,7 +32,7 @@ func (e *Ec2) ListVolumes(ctx context.Context, org string, per int64, next *stri
 
 	out, err := e.Service.DescribeVolumesWithContext(ctx, &input)
 	if err != nil {
-		return nil, nil, ErrCode("listing volumes", err)
+		return nil, nil, common.ErrCode("listing volumes", err)
 	}
 
 	log.Debugf("returning list of %d volumes", len(out.Volumes))
@@ -59,7 +60,7 @@ func (e *Ec2) GetVolume(ctx context.Context, ids ...string) ([]*ec2.Volume, erro
 
 	out, err := e.Service.DescribeVolumesWithContext(ctx, &input)
 	if err != nil {
-		return nil, ErrCode("getting details for volumes", err)
+		return nil, common.ErrCode("getting details for volumes", err)
 	}
 
 	log.Debugf("returning volumes: %+v", out.Volumes)
@@ -87,7 +88,7 @@ func (e *Ec2) ListVolumeModifications(ctx context.Context, id string) ([]*ec2.Vo
 	for {
 		out, err := e.Service.DescribeVolumesModificationsWithContext(ctx, &input)
 		if err != nil {
-			return nil, ErrCode("describing modifications for volume", err)
+			return nil, common.ErrCode("describing modifications for volume", err)
 		}
 
 		log.Debugf("got describe volume modifications output %+v", out)
@@ -125,7 +126,7 @@ func (e *Ec2) ListVolumeSnapshots(ctx context.Context, id string) ([]string, err
 	for {
 		out, err := e.Service.DescribeSnapshotsWithContext(ctx, &input)
 		if err != nil {
-			return nil, ErrCode("describing snapshots for volume", err)
+			return nil, common.ErrCode("describing snapshots for volume", err)
 		}
 
 		log.Debugf("got describe volume snapshots output %+v", out)

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/YaleSpinup/apierror"
+	"github.com/YaleSpinup/ec2-api/common"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	log "github.com/sirupsen/logrus"
@@ -30,7 +31,7 @@ func (e *Ec2) ListSubnets(ctx context.Context, vpc string) ([]map[string]string,
 		Filters: filters,
 	})
 	if err != nil {
-		return nil, ErrCode("failed to list subnets", err)
+		return nil, common.ErrCode("failed to list subnets", err)
 	}
 
 	log.Debugf("got output describing subnets: %+v", out)
