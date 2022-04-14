@@ -21,6 +21,6 @@ func (s *SSM) GetCommandInvocation(ctx context.Context, instance_id, command_id 
 	if err != nil {
 		return nil, common.ErrCode("failed to get command invocation", err)
 	}
-	log.Debugf("got output describing SSMs: %+v", out)
+	log.Debugf("got output describing SSM Command: %+v", out)
 	return out, nil
 }
