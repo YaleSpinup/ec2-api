@@ -10,13 +10,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (s *SSM) GetCommandInvocation(ctx context.Context, instance_id, command_id string) (*ssm.GetCommandInvocationOutput, error) {
-	if instance_id == "" || command_id == "" {
-		return nil, apierror.New(apierror.ErrBadRequest, "both instance_id and command_id should be present", nil)
+func (s *SSM) GetCommandInvocation(ctx context.Context, instanceId, commandId string) (*ssm.GetCommandInvocationOutput, error) {
+	if instanceId == "" || commandId == "" {
+		return nil, apierror.New(apierror.ErrBadRequest, "both instanceId and commandId should be present", nil)
 	}
 	out, err := s.Service.GetCommandInvocationWithContext(ctx, &ssm.GetCommandInvocationInput{
-		CommandId:  aws.String(command_id),
-		InstanceId: aws.String(instance_id),
+		CommandId:  aws.String(commandId),
+		InstanceId: aws.String(instanceId),
 	})
 	if err != nil {
 		return nil, common.ErrCode("failed to get command invocation", err)
