@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/YaleSpinup/apierror"
+	"github.com/YaleSpinup/ec2-api/common"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	log "github.com/sirupsen/logrus"
@@ -39,7 +40,7 @@ func (e *Ec2) ListImages(ctx context.Context, org, name string) ([]map[string]*s
 		Filters: filters,
 	})
 	if err != nil {
-		return nil, ErrCode("listing images", err)
+		return nil, common.ErrCode("listing images", err)
 	}
 
 	log.Debugf("returning list of %d images", len(out.Images))
@@ -68,7 +69,7 @@ func (e *Ec2) GetImage(ctx context.Context, ids ...string) ([]*ec2.Image, error)
 
 	out, err := e.Service.DescribeImagesWithContext(ctx, &input)
 	if err != nil {
-		return nil, ErrCode("getting details for snapshots", err)
+		return nil, common.ErrCode("getting details for snapshots", err)
 	}
 
 	log.Debugf("returning images: %+v", out.Images)

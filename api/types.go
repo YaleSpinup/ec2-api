@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awsutil"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/ssm"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -590,4 +591,54 @@ func tagsList(tags []*ec2.Tag) (res []map[string]string) {
 		})
 	}
 	return res
+}
+
+type CloudWatchOutputConfig struct {
+	CloudWatchLogGroupName  string `json:"cloud_watch_log_group_name"`
+	CloudWatchOutputEnabled bool   `json:"cloud_watch_output_enabled"`
+}
+
+type SSMGetCommandInvocationOutput struct {
+	CommandId              string                 `json:"command_id"`
+	InstanceId             string                 `json:"instance_id"`
+	Comment                string                 `json:"comment"`
+	DocumentName           string                 `json:"document_name"`
+	DocumentVersion        string                 `json:"document_version"`
+	PluginName             string                 `json:"plugin_name"`
+	ResponseCode           int                    `json:"response_code"`
+	ExecutionStartDateTime string                 `json:"execution_start_date_time"`
+	ExecutionElapsedTime   string                 `json:"execution_elapsed_time"`
+	ExecutionEndDateTime   string                 `json:"execution_end_date_time"`
+	Status                 string                 `json:"status"`
+	StatusDetails          string                 `json:"status_details"`
+	StandardOutputContent  string                 `json:"standard_output_content"`
+	StandardOutputURL      string                 `json:"standard_output_url"`
+	StandardErrorContent   string                 `json:"standard_error_content"`
+	StandardErrorURL       string                 `json:"standard_error_url"`
+	CloudWatchOutputConfig CloudWatchOutputConfig `json:"cloud_watch_output_config"`
+}
+
+func toSSMGetCommandInvocationOutput(rawOut *ssm.GetCommandInvocationOutput) *SSMGetCommandInvocationOutput {
+	return &SSMGetCommandInvocationOutput{
+		CommandId:              aws.StringValue(rawOut.CommandId),
+		InstanceId:             aws.StringValue(rawOut.InstanceId),
+		Comment:                aws.StringValue(rawOut.Comment),
+		DocumentName:           aws.StringValue(rawOut.DocumentName),
+		DocumentVersion:        aws.StringValue(rawOut.DocumentVersion),
+		PluginName:             aws.StringValue(rawOut.PluginName),
+		ResponseCode:           int(aws.Int64Value(rawOut.ResponseCode)),
+		ExecutionStartDateTime: aws.StringValue(rawOut.ExecutionStartDateTime),
+		ExecutionElapsedTime:   aws.StringValue(rawOut.ExecutionElapsedTime),
+		ExecutionEndDateTime:   aws.StringValue(rawOut.ExecutionEndDateTime),
+		Status:                 aws.StringValue(rawOut.Status),
+		StatusDetails:          aws.StringValue(rawOut.StatusDetails),
+		StandardOutputContent:  aws.StringValue(rawOut.StandardOutputContent),
+		StandardOutputURL:      aws.StringValue(rawOut.StandardOutputUrl),
+		StandardErrorContent:   aws.StringValue(rawOut.StandardErrorContent),
+		StandardErrorURL:       aws.StringValue(rawOut.StandardErrorUrl),
+		CloudWatchOutputConfig: CloudWatchOutputConfig{
+			CloudWatchLogGroupName:  aws.StringValue(rawOut.CloudWatchOutputConfig.CloudWatchLogGroupName),
+			CloudWatchOutputEnabled: aws.BoolValue(rawOut.CloudWatchOutputConfig.CloudWatchOutputEnabled),
+		},
+	}
 }

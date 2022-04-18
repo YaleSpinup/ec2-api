@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/YaleSpinup/apierror"
+	"github.com/YaleSpinup/ec2-api/common"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	log "github.com/sirupsen/logrus"
@@ -18,7 +19,7 @@ func (e *Ec2) CreateSecurityGroup(ctx context.Context, input *ec2.CreateSecurity
 
 	out, err := e.Service.CreateSecurityGroupWithContext(ctx, input)
 	if err != nil {
-		return nil, ErrCode("failed to create security group", err)
+		return nil, common.ErrCode("failed to create security group", err)
 	}
 
 	log.Debugf("got output creating security group %+v", out)
@@ -39,7 +40,7 @@ func (e *Ec2) ListSecurityGroups(ctx context.Context, org string) ([]map[string]
 		Filters: filters,
 	})
 	if err != nil {
-		return nil, ErrCode("listing security groups", err)
+		return nil, common.ErrCode("listing security groups", err)
 	}
 
 	log.Debugf("returning list of %d security groups", len(out.SecurityGroups))
@@ -77,7 +78,7 @@ func (e *Ec2) GetSecurityGroup(ctx context.Context, ids ...string) ([]*ec2.Secur
 		GroupIds: aws.StringSlice(ids),
 	})
 	if err != nil {
-		return nil, ErrCode("getting details for security groups", err)
+		return nil, common.ErrCode("getting details for security groups", err)
 	}
 
 	log.Debugf("returning security groups: %+v", out.SecurityGroups)
@@ -96,7 +97,7 @@ func (e *Ec2) DeleteSecurityGroup(ctx context.Context, id string) error {
 	if _, err := e.Service.DeleteSecurityGroupWithContext(ctx, &ec2.DeleteSecurityGroupInput{
 		GroupId: aws.String(id),
 	}); err != nil {
-		return ErrCode("deleting security group", err)
+		return common.ErrCode("deleting security group", err)
 	}
 
 	return nil
@@ -112,7 +113,7 @@ func (e *Ec2) WaitUntilSecurityGroupExists(ctx context.Context, id string) error
 	if err := e.Service.WaitUntilSecurityGroupExistsWithContext(ctx, &ec2.DescribeSecurityGroupsInput{
 		GroupIds: aws.StringSlice([]string{id}),
 	}); err != nil {
-		return ErrCode("waiting for security group to exist", err)
+		return common.ErrCode("waiting for security group to exist", err)
 	}
 
 	return nil
@@ -132,7 +133,7 @@ func (e *Ec2) AuthorizeSecurityGroup(ctx context.Context, direction, sg string, 
 			IpPermissions: permissions,
 		})
 		if err != nil {
-			return ErrCode("failed authorizing egress", err)
+			return common.ErrCode("failed authorizing egress", err)
 		}
 
 		log.Debugf("got output authorizing security group egress: %+v", out)
@@ -147,7 +148,7 @@ func (e *Ec2) AuthorizeSecurityGroup(ctx context.Context, direction, sg string, 
 			IpPermissions: permissions,
 		})
 		if err != nil {
-			return ErrCode("failed authorizing ingress", err)
+			return common.ErrCode("failed authorizing ingress", err)
 		}
 
 		log.Debugf("got output authorizing security group ingress: %+v", out)
@@ -176,7 +177,7 @@ func (e *Ec2) RevokeSecurityGroup(ctx context.Context, direction, sg string, per
 			IpPermissions: permissions,
 		})
 		if err != nil {
-			return ErrCode("failed revoking egress", err)
+			return common.ErrCode("failed revoking egress", err)
 		}
 
 		log.Debugf("got output authorizing security group egress: %+v", out)
@@ -191,7 +192,7 @@ func (e *Ec2) RevokeSecurityGroup(ctx context.Context, direction, sg string, per
 			IpPermissions: permissions,
 		})
 		if err != nil {
-			return ErrCode("failed revoking egress", err)
+			return common.ErrCode("failed revoking egress", err)
 		}
 
 		log.Debugf("got output authorizing security group ingress: %+v", out)

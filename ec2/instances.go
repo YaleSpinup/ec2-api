@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/YaleSpinup/apierror"
+	"github.com/YaleSpinup/ec2-api/common"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	log "github.com/sirupsen/logrus"
@@ -77,7 +78,7 @@ func (e *Ec2) ListInstances(ctx context.Context, org string, per int64, next *st
 	})
 
 	if err != nil {
-		return nil, nil, ErrCode("listing insances", err)
+		return nil, nil, common.ErrCode("listing insances", err)
 	}
 
 	log.Debugf("got output from instance list %+v", out)
@@ -117,7 +118,7 @@ func (e *Ec2) GetInstance(ctx context.Context, id string) (*ec2.Instance, error)
 	})
 
 	if err != nil {
-		return nil, ErrCode("getting instance", err)
+		return nil, common.ErrCode("getting instance", err)
 	}
 
 	log.Debugf("got output for instance %s: %+v", id, out)
@@ -153,7 +154,7 @@ func (e *Ec2) ListInstanceVolumes(ctx context.Context, id string) ([]string, err
 	for {
 		out, err := e.Service.DescribeVolumesWithContext(ctx, &input)
 		if err != nil {
-			return nil, ErrCode("describing snapshots for volumes", err)
+			return nil, common.ErrCode("describing snapshots for volumes", err)
 		}
 
 		log.Debugf("got describe snapshots output %+v", out)
@@ -193,7 +194,7 @@ func (e *Ec2) ListInstanceSnapshots(ctx context.Context, id string) ([]string, e
 	for {
 		out, err := e.Service.DescribeSnapshotsWithContext(ctx, &input)
 		if err != nil {
-			return nil, ErrCode("describing snapshots for volumes of an instance", err)
+			return nil, common.ErrCode("describing snapshots for volumes of an instance", err)
 		}
 
 		log.Debugf("got describe snapshots output %+v", out)
@@ -228,7 +229,7 @@ func (e *Ec2) GetInstanceVolume(ctx context.Context, id, volid string) (*ec2.Vol
 	})
 
 	if err != nil {
-		return nil, ErrCode("describing volume", err)
+		return nil, common.ErrCode("describing volume", err)
 	}
 
 	log.Debugf("got output describing volumes %+v", out)

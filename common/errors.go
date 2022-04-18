@@ -1,4 +1,4 @@
-package ec2
+package common
 
 import (
 	"github.com/YaleSpinup/apierror"

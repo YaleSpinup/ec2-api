@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/YaleSpinup/apierror"
+	"github.com/YaleSpinup/ec2-api/common"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	log "github.com/sirupsen/logrus"
@@ -17,7 +18,7 @@ func (e *Ec2) ListVPCs(ctx context.Context) ([]map[string]string, error) {
 		},
 	})
 	if err != nil {
-		return nil, ErrCode("describing vpcs", err)
+		return nil, common.ErrCode("describing vpcs", err)
 	}
 
 	log.Debugf("got output describing VPCs: %+v", out)
@@ -35,7 +36,7 @@ func (e *Ec2) GetVPCByID(ctx context.Context, id string) (*ec2.Vpc, error) {
 		VpcIds: []*string{aws.String(id)},
 	})
 	if err != nil {
-		return nil, ErrCode("describing vpc", err)
+		return nil, common.ErrCode("describing vpc", err)
 	}
 	log.Debugf("got output describing VPC : %+v", out)
 
