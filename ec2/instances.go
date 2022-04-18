@@ -9,6 +9,50 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// CreateInstance creates a new instance and returns the instance details
+func (e *Ec2) CreateInstance(ctx context.Context, input *ec2.RunInstancesInput) (*ec2.Instance, error) {
+	if input == nil {
+		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	log.Infof("creating instance of type %s", aws.StringValue(input.InstanceType))
+
+	out, err := e.Service.RunInstancesWithContext(ctx, input)
+	if err != nil {
+		return nil, ErrCode("failed to create instance", err)
+	}
+
+	log.Debugf("got output creating instance: %+v", out)
+
+	if out == nil || len(out.Instances) != 1 {
+		return nil, apierror.New(apierror.ErrBadRequest, "Unexpected instance count", nil)
+	}
+
+	return out.Instances[0], nil
+}
+
+// DeleteInstance terminates an instance
+func (e *Ec2) DeleteInstance(ctx context.Context, id string) error {
+	if id == "" {
+		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	log.Infof("deleting instance %s", id)
+
+	out, err := e.Service.TerminateInstancesWithContext(ctx, &ec2.TerminateInstancesInput{
+		InstanceIds: []*string{
+			aws.String(id),
+		},
+	})
+	if err != nil {
+		return ErrCode("failed to delete instance", err)
+	}
+
+	log.Debugf("got output deleting instance: %+v", out)
+
+	return nil
+}
+
 // ListInstances lists the instances that are not terminated and not spot
 func (e *Ec2) ListInstances(ctx context.Context, org string, per int64, next *string) ([]map[string]*string, *string, error) {
 	log.Infof("listing ec2 instances")

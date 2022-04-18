@@ -37,6 +37,55 @@ func orgTagAccessPolicy(org string) (string, error) {
 	return string(j), nil
 }
 
+func instanceCreatePolicy() (string, error) {
+	log.Debugf("generating instance crete policy document")
+
+	policy := iam.PolicyDocument{
+		Version: "2012-10-17",
+		Statement: []iam.StatementEntry{
+			{
+				Effect: "Allow",
+				Action: []string{
+					"ec2:RunInstances",
+					"iam:PassRole",
+				},
+				Resource: []string{"*"},
+			},
+		},
+	}
+
+	j, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+
+	return string(j), nil
+}
+
+func instanceDeletePolicy(id string) (string, error) {
+	log.Debugf("generating instance delete policy document")
+
+	policy := iam.PolicyDocument{
+		Version: "2012-10-17",
+		Statement: []iam.StatementEntry{
+			{
+				Effect: "Allow",
+				Action: []string{
+					"ec2:TerminateInstances",
+				},
+				Resource: []string{"*"},
+			},
+		},
+	}
+
+	j, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+
+	return string(j), nil
+}
+
 func sgDeletePolicy(id string) (string, error) {
 	log.Debugf("generating sg delete policy document")
 

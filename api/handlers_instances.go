@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -11,17 +12,111 @@ import (
 	"github.com/gorilla/mux"
 )
 
+func (s *server) InstanceCreateHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+
+	req := Ec2InstanceCreateRequest{}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		msg := fmt.Sprintf("cannot decode body into create instance input: %s", err)
+		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
+		return
+	}
+
+	if req.Type == nil {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required field: type", nil))
+		return
+	}
+
+	if req.Image == nil {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required field: image", nil))
+		return
+	}
+
+	if req.Subnet == nil {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required field: subnet", nil))
+		return
+	}
+
+	if req.Sgs == nil || len(req.Sgs) < 1 {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required field: sgs", nil))
+		return
+	}
+
+	if req.CpuCredits != nil && *req.CpuCredits != "standard" && *req.CpuCredits != "unlimited" {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "invalid value for cpu_credits: must be standard or unlimited", nil))
+		return
+	}
+
+	policy, err := instanceCreatePolicy()
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+		},
+	})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	out, err := orch.createInstance(r.Context(), &req)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponseOk(w, out)
+}
+
+func (s *server) InstanceDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	id := vars["id"]
+
+	policy, err := instanceDeletePolicy(id)
+	if err != nil {
+		handleError(w, apierror.New(apierror.ErrInternalError, "failed to generate policy", err))
+		return
+	}
+
+	orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+		},
+	})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	if err := orch.deleteInstance(r.Context(), id); err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponseOk(w, "OK")
+}
+
 func (s *server) InstanceListHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
 	account := s.mapAccountNumber(vars["account"])
 
-	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
-
 	session, err := s.assumeRole(
 		r.Context(),
 		s.session.ExternalID,
-		role,
+		fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
 		"",
 		"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
 	)
@@ -76,12 +171,10 @@ func (s *server) InstanceGetHandler(w http.ResponseWriter, r *http.Request) {
 	account := s.mapAccountNumber(vars["account"])
 	id := vars["id"]
 
-	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
-
 	session, err := s.assumeRole(
 		r.Context(),
 		s.session.ExternalID,
-		role,
+		fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
 		"",
 		"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
 	)
@@ -112,12 +205,10 @@ func (s *server) InstanceVolumesHandler(w http.ResponseWriter, r *http.Request) 
 	id := vars["id"]
 	vid := vars["vid"]
 
-	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
-
 	session, err := s.assumeRole(
 		r.Context(),
 		s.session.ExternalID,
-		role,
+		fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
 		"",
 		"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
 	)
@@ -156,12 +247,10 @@ func (s *server) InstanceListSnapshotsHandler(w http.ResponseWriter, r *http.Req
 	account := s.mapAccountNumber(vars["account"])
 	id := vars["id"]
 
-	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
-
 	session, err := s.assumeRole(
 		r.Context(),
 		s.session.ExternalID,
-		role,
+		fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
 		"",
 		"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
 	)
