@@ -20,7 +20,7 @@ func (e *Ec2) CreateInstance(ctx context.Context, input *ec2.RunInstancesInput) 
 
 	out, err := e.Service.RunInstancesWithContext(ctx, input)
 	if err != nil {
-		return nil, ErrCode("failed to create instance", err)
+		return nil, common.ErrCode("failed to create instance", err)
 	}
 
 	log.Debugf("got output creating instance: %+v", out)
@@ -46,7 +46,7 @@ func (e *Ec2) DeleteInstance(ctx context.Context, id string) error {
 		},
 	})
 	if err != nil {
-		return ErrCode("failed to delete instance", err)
+		return common.ErrCode("failed to delete instance", err)
 	}
 
 	log.Debugf("got output deleting instance: %+v", out)
