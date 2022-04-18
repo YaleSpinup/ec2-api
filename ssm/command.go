@@ -12,7 +12,7 @@ import (
 
 func (s *SSM) GetCommandInvocation(ctx context.Context, instanceId, commandId string) (*ssm.GetCommandInvocationOutput, error) {
 	if instanceId == "" || commandId == "" {
-		return nil, apierror.New(apierror.ErrBadRequest, "both instanceId and commandId should be present", nil)
+		return nil, apierror.New(apierror.ErrBadRequest, "both instanceId and commandid should be present", nil)
 	}
 	out, err := s.Service.GetCommandInvocationWithContext(ctx, &ssm.GetCommandInvocationInput{
 		CommandId:  aws.String(commandId),
