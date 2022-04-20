@@ -642,3 +642,71 @@ func toSSMGetCommandInvocationOutput(rawOut *ssm.GetCommandInvocationOutput) *SS
 		},
 	}
 }
+
+type AssociationDescription struct {
+	Name                        string              `json:"name"`
+	InstanceId                  string              `json:"instance_id"`
+	AssociationVersion          string              `json:"association_version"`
+	Date                        string              `json:"date"`
+	LastUpdateAssociationDate   string              `json:"last_update_association_date"`
+	Status                      AssociationStatus   `json:"status"`
+	Overview                    AssociationOverview `json:"overview"`
+	DocumentVersion             string              `json:"document_version"`
+	AssociationId               string              `json:"association_id"`
+	Targets                     []AssociationTarget `json:"targets"`
+	LastExecutionDate           string              `json:"last_execution_date"`
+	LastSuccessfulExecutionDate string              `json:"last_successful_execution_date"`
+	ApplyOnlyAtCronInterval     bool                `json:"apply_only_at_cron_interval"`
+}
+type AssociationStatus struct {
+	Date    string `json:"date"`
+	Name    string `json:"name"`
+	Message string `json:"message"`
+}
+type AssociationOverview struct {
+	Status         string `json:"status"`
+	DetailedStatus string `json:"detailed_status"`
+}
+
+type AssociationTarget struct {
+	Key    string   `json:"key"`
+	Values []string `json:"values"`
+}
+
+func toSSMAssociationDescription(rawDesc *ssm.DescribeAssociationOutput) *AssociationDescription {
+	const dateLayout = "2006-01-02 15:04:05 +0000"
+
+	return &AssociationDescription{
+		Name:                      aws.StringValue(rawDesc.AssociationDescription.Name),
+		InstanceId:                aws.StringValue(rawDesc.AssociationDescription.InstanceId),
+		AssociationVersion:        aws.StringValue(rawDesc.AssociationDescription.AssociationVersion),
+		Date:                      rawDesc.AssociationDescription.Date.Format(dateLayout),
+		LastUpdateAssociationDate: rawDesc.AssociationDescription.LastUpdateAssociationDate.Format(dateLayout),
+		Status: AssociationStatus{
+			Date:    rawDesc.AssociationDescription.Status.Date.Format(dateLayout),
+			Name:    aws.StringValue(rawDesc.AssociationDescription.Status.Name),
+			Message: aws.StringValue(rawDesc.AssociationDescription.Status.Message),
+		},
+		Overview: AssociationOverview{
+			Status:         aws.StringValue(rawDesc.AssociationDescription.Overview.Status),
+			DetailedStatus: aws.StringValue(rawDesc.AssociationDescription.Overview.DetailedStatus),
+		},
+		DocumentVersion:             aws.StringValue(rawDesc.AssociationDescription.DocumentVersion),
+		AssociationId:               aws.StringValue(rawDesc.AssociationDescription.AssociationId),
+		Targets:                     parseAssociationTargets(rawDesc.AssociationDescription.Targets),
+		LastExecutionDate:           rawDesc.AssociationDescription.LastExecutionDate.Format(dateLayout),
+		LastSuccessfulExecutionDate: rawDesc.AssociationDescription.LastSuccessfulExecutionDate.Format(dateLayout),
+		ApplyOnlyAtCronInterval:     aws.BoolValue(rawDesc.AssociationDescription.ApplyOnlyAtCronInterval),
+	}
+}
+
+func parseAssociationTargets(rawTgts []*ssm.Target) (tgts []AssociationTarget) {
+	for _, rt := range rawTgts {
+		t := AssociationTarget{Key: aws.StringValue(rt.Key)}
+		for _, rv := range rt.Values {
+			t.Values = append(t.Values, aws.StringValue(rv))
+		}
+		tgts = append(tgts, t)
+	}
+	return tgts
+}
