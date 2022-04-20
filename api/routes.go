@@ -64,7 +64,7 @@ func (s *server) routes() {
 	api.HandleFunc("/{account}/snapshots", s.ProxyRequestHandler).Methods(http.MethodPost)
 	api.HandleFunc("/{account}/images", s.ProxyRequestHandler).Methods(http.MethodPost)
 
-	api.HandleFunc("/{account}/images/{id}/tags", s.ProxyRequestHandler).Methods(http.MethodPut)
+	api.HandleFunc("/{account}/images/{id}/tags", s.UpdateImageTagsHandler).Methods(http.MethodPut)
 	api.HandleFunc("/{account}/instances/{id}", s.ProxyRequestHandler).Methods(http.MethodPut)
 	api.HandleFunc("/{account}/instances/{id}/power", s.ProxyRequestHandler).Methods(http.MethodPut)
 	api.HandleFunc("/{account}/instances/{id}/ssm/command", s.ProxyRequestHandler).Methods(http.MethodPut)

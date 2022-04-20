@@ -170,3 +170,25 @@ func sgUpdatePolicy(id string) (string, error) {
 
 	return string(j), nil
 }
+
+func tagCreatePolicy() (string, error) {
+	policy := iam.PolicyDocument{
+		Version: "2012-10-17",
+		Statement: []iam.StatementEntry{
+			{
+				Effect: "Allow",
+				Action: []string{
+					"ec2:CreateTags",
+				},
+				Resource: []string{"*"},
+			},
+		},
+	}
+
+	j, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+
+	return string(j), nil
+}
