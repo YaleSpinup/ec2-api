@@ -94,21 +94,24 @@ func (s *server) ImageGetHandler(w http.ResponseWriter, r *http.Request) {
 	handleResponseOk(w, toEc2ImageResponse(out[0]))
 }
 
-func (s *server) UpdateImageTagsHandler(w http.ResponseWriter, r *http.Request) {
+func (s *server) ImageUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
 	account := s.mapAccountNumber(vars["account"])
 	id := vars["id"]
 
-	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
-	policy, err := tagCreatePolicy()
-	if err != nil {
+	req := &Ec2ImageUpdateRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		handleError(w, err)
 		return
 	}
-
-	req := &Ec2UpdateTagRequest{}
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+	if req.Tags == nil {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required field: tags", nil))
+		return
+	}
+	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
+	policy, err := tagCreatePolicy()
+	if err != nil {
 		handleError(w, err)
 		return
 	}
@@ -131,8 +134,7 @@ func (s *server) UpdateImageTagsHandler(w http.ResponseWriter, r *http.Request) 
 		ec2.WithOrg(s.org),
 	)
 
-	err = service.UpdateTags(r.Context(), id, req.Tags)
-	if err != nil {
+	if err := service.UpdateTags(r.Context(), id, req.Tags); err != nil {
 		handleError(w, err)
 		return
 	}

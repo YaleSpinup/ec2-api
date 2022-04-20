@@ -643,6 +643,6 @@ func toSSMGetCommandInvocationOutput(rawOut *ssm.GetCommandInvocationOutput) *SS
 	}
 }
 
-type Ec2UpdateTagRequest struct {
+type Ec2ImageUpdateRequest struct {
 	Tags map[string]string
 }

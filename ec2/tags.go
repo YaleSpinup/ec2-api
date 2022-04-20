@@ -15,7 +15,10 @@ func (e *Ec2) UpdateTags(ctx context.Context, id string, rawTags map[string]stri
 		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
 	resources := e.getResourcesById(id)
-	tags := toEc2Tags(rawTags)
+	var tags []*ec2.Tag
+	for key, val := range rawTags {
+		tags = append(tags, &ec2.Tag{Key: aws.String(key), Value: aws.String(val)})
+	}
 
 	log.Infof("updating resources: %v with tags %+v", resources, tags)
 
@@ -24,8 +27,7 @@ func (e *Ec2) UpdateTags(ctx context.Context, id string, rawTags map[string]stri
 		Tags:      tags,
 	}
 
-	_, err := e.Service.CreateTagsWithContext(ctx, &input)
-	if err != nil {
+	if _, err := e.Service.CreateTagsWithContext(ctx, &input); err != nil {
 		return common.ErrCode("creating tags", err)
 	}
 
@@ -34,11 +36,4 @@ func (e *Ec2) UpdateTags(ctx context.Context, id string, rawTags map[string]stri
 
 func (e *Ec2) getResourcesById(id string) []*string {
 	return []*string{aws.String(id)}
-}
-
-func toEc2Tags(rawTags map[string]string) (tags []*ec2.Tag) {
-	for key, val := range rawTags {
-		tags = append(tags, &ec2.Tag{Key: aws.String(key), Value: aws.String(val)})
-	}
-	return tags
 }
