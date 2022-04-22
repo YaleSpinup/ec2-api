@@ -39,7 +39,7 @@ func (s *server) routes() {
 	api.HandleFunc("/{account}/instances/{id}/snapshots", s.InstanceListSnapshotsHandler).Methods(http.MethodGet)
 
 	api.HandleFunc("/{account}/instances/{id}/ssm/command", s.InstanceGetCommandHandler).Methods(http.MethodGet).Queries("command_id", "{cid}")
-	api.HandleFunc("/{account}/instances/{id}/ssm/association", s.ProxyRequestHandler).Methods(http.MethodGet)
+	api.HandleFunc("/{account}/instances/{id}/ssm/association", s.DescribeAssociationHandler).Methods(http.MethodGet).Queries("document", "{doc}")
 
 	api.HandleFunc("/{account}/sgs", s.SecurityGroupListHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/sgs/{id}", s.SecurityGroupGetHandler).Methods(http.MethodGet)
