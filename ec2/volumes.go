@@ -10,6 +10,28 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// CreateVolume creates a new volume and returns the volume details
+func (e *Ec2) CreateVolume(ctx context.Context, input *ec2.CreateVolumeInput) (*ec2.Volume, error) {
+	if input == nil {
+		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	log.Infof("creating volume of type %s, size %d", aws.StringValue(input.VolumeType), aws.Int64Value(input.Size))
+
+	out, err := e.Service.CreateVolumeWithContext(ctx, input)
+	if err != nil {
+		return nil, common.ErrCode("failed to create volume", err)
+	}
+
+	log.Debugf("got output creating volume: %+v", out)
+
+	if out == nil {
+		return nil, apierror.New(apierror.ErrInternalError, "Unexpected volume output", nil)
+	}
+
+	return out, nil
+}
+
 func (e *Ec2) ListVolumes(ctx context.Context, org string, per int64, next *string) ([]map[string]*string, *string, error) {
 	log.Infof("listing volumes")
 

@@ -49,6 +49,16 @@ type Ec2BlockDevice struct {
 	Ebs        *Ec2EbsVolume `json:"ebs"`
 }
 
+type Ec2VolumeCreateRequest struct {
+	Type       *string `json:"type"`
+	Size       *int64  `json:"size"`
+	Iops       *int64  `json:"iops"`
+	AZ         *string `json:"az"`
+	SnapshotId *string `json:"snapshot_id"`
+	KmsKeyId   *string `json:"kms_key_id"`
+	Encrypted  *bool   `json:"encrypted"`
+}
+
 type Ec2EbsVolume struct {
 	Encrypted  *bool   `json:"encrypted"`
 	VolumeSize *int64  `json:"volume_size"`

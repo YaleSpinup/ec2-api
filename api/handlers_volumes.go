@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -10,6 +11,68 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/gorilla/mux"
 )
+
+func (s *server) VolumeCreateHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+
+	req := Ec2VolumeCreateRequest{}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		msg := fmt.Sprintf("cannot decode body into create volume input: %s", err)
+		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
+		return
+	}
+
+	if req.AZ == nil {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required field: az", nil))
+		return
+	}
+
+	if req.Size == nil && req.SnapshotId == nil {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "at least one of these must be specified: size, snapshot_id", nil))
+		return
+	}
+
+	if aws.Int64Value(req.Size) < 1 || aws.Int64Value(req.Size) > 16384 {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "volume size must be between 1 and 16384", nil))
+		return
+	}
+
+	if req.Type == nil {
+		req.Type = aws.String("gp3")
+	}
+
+	if req.Encrypted == nil {
+		req.Encrypted = aws.Bool(false)
+	}
+
+	policy, err := volumeCreatePolicy()
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+		},
+	})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	out, err := orch.createVolume(r.Context(), &req)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponseOk(w, out)
+}
 
 func (s *server) VolumeListHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
