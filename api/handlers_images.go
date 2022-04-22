@@ -102,7 +102,8 @@ func (s *server) ImageUpdateHandler(w http.ResponseWriter, r *http.Request) {
 
 	req := &Ec2ImageUpdateRequest{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		handleError(w, err)
+		msg := fmt.Sprintf("cannot decode body into update image input: %s", err)
+		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
 		return
 	}
 
