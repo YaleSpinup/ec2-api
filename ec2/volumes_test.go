@@ -28,6 +28,14 @@ func (m mockEC2Client) CreateVolumeWithContext(ctx context.Context, input *ec2.C
 	}, nil
 }
 
+func (m mockEC2Client) DeleteVolumeWithContext(ctx context.Context, input *ec2.DeleteVolumeInput, opts ...request.Option) (*ec2.DeleteVolumeOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+
+	return &ec2.DeleteVolumeOutput{}, nil
+}
+
 func TestEc2_CreateVolume(t *testing.T) {
 	type fields struct {
 		session         *session.Session
@@ -114,6 +122,73 @@ func TestEc2_CreateVolume(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Ec2.CreateVolume() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEc2_DeleteVolume(t *testing.T) {
+	type fields struct {
+		session         *session.Session
+		Service         ec2iface.EC2API
+		DefaultKMSKeyId string
+		DefaultSgs      []string
+		DefaultSubnets  []string
+		org             string
+	}
+	type args struct {
+		ctx   context.Context
+		input string
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "nil input",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args:    args{ctx: context.TODO()},
+			wantErr: true,
+		},
+		{
+			name: "good input",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx:   context.TODO(),
+				input: "vol-0123456789abcdef0",
+			},
+		},
+		{
+			name: "aws err",
+			fields: fields{
+				Service: newmockEC2Client(t, awserr.New("BadRequest", "boom", nil)),
+			},
+			args:    args{ctx: context.TODO()},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Ec2{
+				session:         tt.fields.session,
+				Service:         tt.fields.Service,
+				DefaultKMSKeyId: tt.fields.DefaultKMSKeyId,
+				DefaultSgs:      tt.fields.DefaultSgs,
+				DefaultSubnets:  tt.fields.DefaultSubnets,
+				org:             tt.fields.org,
+			}
+			err := e.DeleteVolume(tt.args.ctx, tt.args.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Ec2.DeleteVolume() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
 		})
 	}

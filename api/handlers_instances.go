@@ -106,7 +106,7 @@ func (s *server) InstanceDeleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	handleResponseOk(w, "OK")
+	handleResponseOk(w, nil)
 }
 
 func (s *server) InstanceListHandler(w http.ResponseWriter, r *http.Request) {

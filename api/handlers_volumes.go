@@ -74,6 +74,38 @@ func (s *server) VolumeCreateHandler(w http.ResponseWriter, r *http.Request) {
 	handleResponseOk(w, out)
 }
 
+func (s *server) VolumeDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	id := vars["id"]
+
+	policy, err := volumeDeletePolicy(id)
+	if err != nil {
+		handleError(w, apierror.New(apierror.ErrInternalError, "failed to generate policy", err))
+		return
+	}
+
+	orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+		},
+	})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	if err := orch.deleteVolume(r.Context(), id); err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponseOk(w, nil)
+}
+
 func (s *server) VolumeListHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)

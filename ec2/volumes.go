@@ -32,6 +32,25 @@ func (e *Ec2) CreateVolume(ctx context.Context, input *ec2.CreateVolumeInput) (*
 	return out, nil
 }
 
+func (e *Ec2) DeleteVolume(ctx context.Context, id string) error {
+	if id == "" {
+		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	log.Infof("deleting volume %s", id)
+
+	out, err := e.Service.DeleteVolumeWithContext(ctx, &ec2.DeleteVolumeInput{
+		VolumeId: aws.String(id),
+	})
+	if err != nil {
+		return common.ErrCode("failed to delete volume", err)
+	}
+
+	log.Debugf("got output deleting volume: %+v", out)
+
+	return nil
+}
+
 func (e *Ec2) ListVolumes(ctx context.Context, org string, per int64, next *string) ([]map[string]*string, *string, error) {
 	log.Infof("listing volumes")
 

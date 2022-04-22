@@ -50,8 +50,14 @@ func NotImplemented(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Not Implemented"))
 }
 
-// handleResponseOk handles the standard response
+// handleResponseOk handles the standard success response
+// returns 200 or 204 (if no response content)
 func handleResponseOk(w http.ResponseWriter, response interface{}) {
+	if response == nil {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
 	j, err := json.Marshal(response)
 	if err != nil {
 		log.Errorf("cannot marshal response (%v) into JSON: %s", response, err)

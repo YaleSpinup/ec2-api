@@ -219,3 +219,27 @@ func volumeCreatePolicy() (string, error) {
 
 	return string(j), nil
 }
+
+func volumeDeletePolicy(id string) (string, error) {
+	log.Debugf("generating volume delete policy document")
+
+	policy := iam.PolicyDocument{
+		Version: "2012-10-17",
+		Statement: []iam.StatementEntry{
+			{
+				Effect: "Allow",
+				Action: []string{
+					"ec2:DeleteVolume",
+				},
+				Resource: []string{"*"},
+			},
+		},
+	}
+
+	j, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+
+	return string(j), nil
+}

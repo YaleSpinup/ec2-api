@@ -35,16 +35,16 @@ func (o *ec2Orchestrator) createVolume(ctx context.Context, req *Ec2VolumeCreate
 	return aws.StringValue(out.VolumeId), nil
 }
 
-// func (o *ec2Orchestrator) deleteVolume(ctx context.Context, id string) error {
-// 	if id == "" {
-// 		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
-// 	}
+func (o *ec2Orchestrator) deleteVolume(ctx context.Context, id string) error {
+	if id == "" {
+		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
 
-// 	log.Debugf("got request to delete volume %s", id)
+	log.Debugf("got request to delete volume %s", id)
 
-// 	if err := o.ec2Client.DeleteVolume(ctx, id); err != nil {
-// 		return err
-// 	}
+	if err := o.ec2Client.DeleteVolume(ctx, id); err != nil {
+		return err
+	}
 
-// 	return nil
-// }
+	return nil
+}
