@@ -105,10 +105,12 @@ func (s *server) ImageUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		handleError(w, err)
 		return
 	}
-	if req.Tags == nil {
+
+	if len(req.Tags) == 0 {
 		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required field: tags", nil))
 		return
 	}
+
 	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
 	policy, err := tagCreatePolicy()
 	if err != nil {
@@ -134,7 +136,7 @@ func (s *server) ImageUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		ec2.WithOrg(s.org),
 	)
 
-	if err := service.UpdateTags(r.Context(), id, req.Tags); err != nil {
+	if err := service.UpdateTags(r.Context(), req.Tags, id); err != nil {
 		handleError(w, err)
 		return
 	}

@@ -10,20 +10,19 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (e *Ec2) UpdateTags(ctx context.Context, id string, rawTags map[string]string) error {
-	if id == "" || len(rawTags) == 0 {
+func (e *Ec2) UpdateTags(ctx context.Context, rawTags map[string]string, ids ...string) error {
+	if len(ids) == 0 || len(rawTags) == 0 {
 		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
-	resources := e.getResourcesById(id)
 	var tags []*ec2.Tag
 	for key, val := range rawTags {
 		tags = append(tags, &ec2.Tag{Key: aws.String(key), Value: aws.String(val)})
 	}
 
-	log.Infof("updating resources: %v with tags %+v", resources, tags)
+	log.Infof("updating resources: %v with tags %+v", ids, tags)
 
 	input := ec2.CreateTagsInput{
-		Resources: resources,
+		Resources: aws.StringSlice(ids),
 		Tags:      tags,
 	}
 
@@ -32,8 +31,4 @@ func (e *Ec2) UpdateTags(ctx context.Context, id string, rawTags map[string]stri
 	}
 
 	return nil
-}
-
-func (e *Ec2) getResourcesById(id string) []*string {
-	return []*string{aws.String(id)}
 }
