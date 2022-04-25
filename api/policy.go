@@ -205,7 +205,6 @@ func volumeCreatePolicy() (string, error) {
 				Effect: "Allow",
 				Action: []string{
 					"ec2:CreateVolume",
-					"iam:PassRole",
 				},
 				Resource: []string{"*"},
 			},
