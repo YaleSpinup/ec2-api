@@ -643,6 +643,9 @@ func toSSMGetCommandInvocationOutput(rawOut *ssm.GetCommandInvocationOutput) *SS
 	}
 }
 
+type Ec2ImageUpdateRequest struct {
+	Tags map[string]string
+}
 type AssociationDescription struct {
 	Name                        string              `json:"name"`
 	InstanceId                  string              `json:"instance_id"`

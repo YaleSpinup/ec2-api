@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -91,4 +92,55 @@ func (s *server) ImageGetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handleResponseOk(w, toEc2ImageResponse(out[0]))
+}
+
+func (s *server) ImageUpdateHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	id := vars["id"]
+
+	req := &Ec2ImageUpdateRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		msg := fmt.Sprintf("cannot decode body into update image input: %s", err)
+		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
+		return
+	}
+
+	if len(req.Tags) == 0 {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required field: tags", nil))
+		return
+	}
+
+	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
+	policy, err := tagCreatePolicy()
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	session, err := s.assumeRole(
+		r.Context(),
+		s.session.ExternalID,
+		role,
+		policy,
+		"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+	)
+	if err != nil {
+		msg := fmt.Sprintf("failed to assume role in account: %s", account)
+		handleError(w, apierror.New(apierror.ErrForbidden, msg, err))
+		return
+	}
+
+	service := ec2.New(
+		ec2.WithSession(session.Session),
+		ec2.WithOrg(s.org),
+	)
+
+	if err := service.UpdateTags(r.Context(), req.Tags, id); err != nil {
+		handleError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
