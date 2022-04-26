@@ -172,6 +172,8 @@ func sgUpdatePolicy(id string) (string, error) {
 }
 
 func tagCreatePolicy() (string, error) {
+	log.Debugf("generating tag crete policy document")
+
 	policy := iam.PolicyDocument{
 		Version: "2012-10-17",
 		Statement: []iam.StatementEntry{
@@ -179,6 +181,54 @@ func tagCreatePolicy() (string, error) {
 				Effect: "Allow",
 				Action: []string{
 					"ec2:CreateTags",
+				},
+				Resource: []string{"*"},
+			},
+		},
+	}
+
+	j, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+
+	return string(j), nil
+}
+
+func volumeCreatePolicy() (string, error) {
+	log.Debugf("generating volume crete policy document")
+
+	policy := iam.PolicyDocument{
+		Version: "2012-10-17",
+		Statement: []iam.StatementEntry{
+			{
+				Effect: "Allow",
+				Action: []string{
+					"ec2:CreateVolume",
+				},
+				Resource: []string{"*"},
+			},
+		},
+	}
+
+	j, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+
+	return string(j), nil
+}
+
+func volumeDeletePolicy(id string) (string, error) {
+	log.Debugf("generating volume delete policy document")
+
+	policy := iam.PolicyDocument{
+		Version: "2012-10-17",
+		Statement: []iam.StatementEntry{
+			{
+				Effect: "Allow",
+				Action: []string{
+					"ec2:DeleteVolume",
 				},
 				Resource: []string{"*"},
 			},
