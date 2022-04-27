@@ -172,8 +172,7 @@ func sgUpdatePolicy(id string) (string, error) {
 }
 
 func tagCreatePolicy() (string, error) {
-	log.Debugf("generating tag crete policy document")
-
+	log.Debugf("generating tag create policy document")
 	policy := iam.PolicyDocument{
 		Version: "2012-10-17",
 		Statement: []iam.StatementEntry{
@@ -229,6 +228,31 @@ func volumeDeletePolicy(id string) (string, error) {
 				Effect: "Allow",
 				Action: []string{
 					"ec2:DeleteVolume",
+				},
+				Resource: []string{"*"},
+			},
+		},
+	}
+
+	j, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+
+	return string(j), nil
+}
+
+func changeInstanceStatePolicy() (string, error) {
+	log.Debugf("generating power update policy document")
+	policy := iam.PolicyDocument{
+		Version: "2012-10-17",
+		Statement: []iam.StatementEntry{
+			{
+				Effect: "Allow",
+				Action: []string{
+					"ec2:StartInstances",
+					"ec2:StopInstances",
+					"ec2:RebootInstances",
 				},
 				Resource: []string{"*"},
 			},
