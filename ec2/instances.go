@@ -243,6 +243,7 @@ func (e *Ec2) GetInstanceVolume(ctx context.Context, id, volid string) (*ec2.Vol
 	return out.Volumes[0], nil
 }
 
+// ChangeInstancesState is used to start, stop and reboot a given instance
 func (e *Ec2) ChangeInstancesState(ctx context.Context, state string, ids ...string) error {
 	if len(ids) == 0 || state == "" {
 		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
