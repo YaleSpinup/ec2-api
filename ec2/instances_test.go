@@ -60,6 +60,30 @@ func (m mockEC2Client) TerminateInstancesWithContext(ctx context.Context, input 
 	return &ec2.TerminateInstancesOutput{}, nil
 }
 
+func (m mockEC2Client) StartInstancesWithContext(ctx context.Context, input *ec2.StartInstancesInput, opts ...request.Option) (*ec2.StartInstancesOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+
+	return &ec2.StartInstancesOutput{}, nil
+}
+
+func (m mockEC2Client) StopInstancesWithContext(ctx context.Context, input *ec2.StopInstancesInput, opts ...request.Option) (*ec2.StopInstancesOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+
+	return &ec2.StopInstancesOutput{}, nil
+}
+
+func (m mockEC2Client) RebootInstancesWithContext(ctx context.Context, input *ec2.RebootInstancesInput, opts ...request.Option) (*ec2.RebootInstancesOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+
+	return &ec2.RebootInstancesOutput{}, nil
+}
+
 func TestEc2_CreateInstance(t *testing.T) {
 	type fields struct {
 		session         *session.Session
@@ -263,6 +287,218 @@ func TestEc2_GetInstance(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Ec2.GetInstance() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEc2_StartInstance(t *testing.T) {
+	type fields struct {
+		session         *session.Session
+		Service         ec2iface.EC2API
+		DefaultKMSKeyId string
+		DefaultSgs      []string
+		DefaultSubnets  []string
+		org             string
+	}
+	type args struct {
+		ctx context.Context
+		ids []string
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "nil input",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args:    args{ctx: context.TODO()},
+			wantErr: true,
+		},
+		{
+			name: "good input",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx: context.TODO(),
+				ids: []string{"i-0123456789abcdef0"},
+			},
+		},
+		{
+			name: "aws err",
+			fields: fields{
+				Service: newmockEC2Client(t, awserr.New("BadRequest", "boom", nil)),
+			},
+			args: args{
+				ctx: context.TODO(),
+				ids: []string{"i-0123456789abcdef0"},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Ec2{
+				session:         tt.fields.session,
+				Service:         tt.fields.Service,
+				DefaultKMSKeyId: tt.fields.DefaultKMSKeyId,
+				DefaultSgs:      tt.fields.DefaultSgs,
+				DefaultSubnets:  tt.fields.DefaultSubnets,
+				org:             tt.fields.org,
+			}
+			err := e.StartInstance(tt.args.ctx, tt.args.ids...)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Ec2.StartInstance() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
+
+func TestEc2_StopInstance(t *testing.T) {
+	type fields struct {
+		session         *session.Session
+		Service         ec2iface.EC2API
+		DefaultKMSKeyId string
+		DefaultSgs      []string
+		DefaultSubnets  []string
+		org             string
+	}
+	type args struct {
+		ctx   context.Context
+		force bool
+		ids   []string
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "nil input",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args:    args{ctx: context.TODO()},
+			wantErr: true,
+		},
+		{
+			name: "good input",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx:   context.TODO(),
+				force: true,
+				ids:   []string{"i-0123456789abcdef0"},
+			},
+		},
+		{
+			name: "aws err",
+			fields: fields{
+				Service: newmockEC2Client(t, awserr.New("BadRequest", "boom", nil)),
+			},
+			args: args{
+				ctx: context.TODO(),
+				ids: []string{"i-0123456789abcdef0"},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Ec2{
+				session:         tt.fields.session,
+				Service:         tt.fields.Service,
+				DefaultKMSKeyId: tt.fields.DefaultKMSKeyId,
+				DefaultSgs:      tt.fields.DefaultSgs,
+				DefaultSubnets:  tt.fields.DefaultSubnets,
+				org:             tt.fields.org,
+			}
+			err := e.StopInstance(tt.args.ctx, tt.args.force, tt.args.ids...)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Ec2.StopInstance() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
+
+func TestEc2_RebootInstance(t *testing.T) {
+	type fields struct {
+		session         *session.Session
+		Service         ec2iface.EC2API
+		DefaultKMSKeyId string
+		DefaultSgs      []string
+		DefaultSubnets  []string
+		org             string
+	}
+	type args struct {
+		ctx context.Context
+		ids []string
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "nil input",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args:    args{ctx: context.TODO()},
+			wantErr: true,
+		},
+		{
+			name: "good input",
+			fields: fields{
+				Service: newmockEC2Client(t, nil),
+			},
+			args: args{
+				ctx: context.TODO(),
+				ids: []string{"i-0123456789abcdef0"},
+			},
+		},
+		{
+			name: "aws err",
+			fields: fields{
+				Service: newmockEC2Client(t, awserr.New("BadRequest", "boom", nil)),
+			},
+			args: args{
+				ctx: context.TODO(),
+				ids: []string{"i-0123456789abcdef0"},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Ec2{
+				session:         tt.fields.session,
+				Service:         tt.fields.Service,
+				DefaultKMSKeyId: tt.fields.DefaultKMSKeyId,
+				DefaultSgs:      tt.fields.DefaultSgs,
+				DefaultSubnets:  tt.fields.DefaultSubnets,
+				org:             tt.fields.org,
+			}
+			err := e.RebootInstance(tt.args.ctx, tt.args.ids...)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Ec2.RebootInstance() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
 		})
 	}

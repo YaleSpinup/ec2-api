@@ -349,13 +349,13 @@ func (s *server) DescribeAssociationHandler(w http.ResponseWriter, r *http.Reque
 	handleResponseOk(w, toSSMAssociationDescription(out))
 }
 
-func (s *server) ChangeInstanceStateHandler(w http.ResponseWriter, r *http.Request) {
+func (s *server) InstanceStateHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
 	account := s.mapAccountNumber(vars["account"])
 	id := vars["id"]
 
-	req := &Ec2ChangeInstanceStateInput{}
+	req := &Ec2InstanceStateChangeRequest{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		msg := fmt.Sprintf("cannot decode body into change power input: %s", err)
 		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
@@ -367,32 +367,25 @@ func (s *server) ChangeInstanceStateHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
 	policy, err := changeInstanceStatePolicy()
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	session, err := s.assumeRole(
-		r.Context(),
-		s.session.ExternalID,
-		role,
-		policy,
-		"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
-	)
+	orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+		},
+	})
 	if err != nil {
-		msg := fmt.Sprintf("failed to assume role in account: %s", account)
-		handleError(w, apierror.New(apierror.ErrForbidden, msg, err))
+		handleError(w, err)
 		return
 	}
 
-	service := ec2.New(
-		ec2.WithSession(session.Session),
-		ec2.WithOrg(s.org),
-	)
-
-	if err := service.ChangeInstancesState(r.Context(), req.State, id); err != nil {
+	if err := orch.instancesState(r.Context(), req.State, id); err != nil {
 		handleError(w, err)
 		return
 	}

@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/YaleSpinup/apierror"
@@ -88,4 +89,25 @@ func blockDeviceMappingsFromRequest(r []Ec2BlockDevice) []*ec2.BlockDeviceMappin
 	}
 
 	return blockDeviceMappings
+}
+
+// instancesState is used to start, stop and reboot a given instance
+func (o *ec2Orchestrator) instancesState(ctx context.Context, state string, ids ...string) error {
+	if len(ids) == 0 || state == "" {
+		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	state = strings.ToLower(state)
+	switch state {
+	case "start":
+		return o.ec2Client.StartInstance(ctx, ids...)
+	case "stop", "poweroff":
+		isForce := state == "poweroff"
+		return o.ec2Client.StopInstance(ctx, isForce, ids...)
+	case "reboot":
+		return o.ec2Client.RebootInstance(ctx, ids...)
+	default:
+		msg := fmt.Sprintf("unknown power state %q", state)
+		return apierror.New(apierror.ErrBadRequest, msg, nil)
+	}
 }
