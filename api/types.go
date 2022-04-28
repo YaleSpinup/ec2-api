@@ -723,3 +723,9 @@ func parseAssociationTargets(rawTgts []*ssm.Target) (tgts []AssociationTarget) {
 	}
 	return tgts
 }
+
+type SSMSendCommand struct {
+	DocumentName   string               `json:"document_name"`
+	Parameters     map[string][]*string `json:"parameters"`
+	TimeoutSeconds *int64               `json:"timeout"`
+}

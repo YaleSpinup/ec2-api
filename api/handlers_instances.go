@@ -348,3 +348,44 @@ func (s *server) DescribeAssociationHandler(w http.ResponseWriter, r *http.Reque
 	}
 	handleResponseOk(w, toSSMAssociationDescription(out))
 }
+
+func (s *server) InstanceSendCommandHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	id := vars["id"]
+
+	req := SSMSendCommand{}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		msg := fmt.Sprintf("cannot decode body into ssm send command input: %s", err)
+		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
+		return
+	}
+
+	policy, err := sendCommandPolicy()
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	orch, err := s.newSSMOrchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess",
+		},
+	})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	out, err := orch.sendInstancesCommand(r.Context(), &req, id)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponseOk(w, out)
+
+}
