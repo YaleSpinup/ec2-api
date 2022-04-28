@@ -348,3 +348,47 @@ func (s *server) DescribeAssociationHandler(w http.ResponseWriter, r *http.Reque
 	}
 	handleResponseOk(w, toSSMAssociationDescription(out))
 }
+
+func (s *server) InstanceStateHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	id := vars["id"]
+
+	req := &Ec2InstanceStateChangeRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		msg := fmt.Sprintf("cannot decode body into change power input: %s", err)
+		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
+		return
+	}
+
+	if req.State == "" {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required field: state", nil))
+		return
+	}
+
+	policy, err := changeInstanceStatePolicy()
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+		},
+	})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	if err := orch.instancesState(r.Context(), req.State, id); err != nil {
+		handleError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
