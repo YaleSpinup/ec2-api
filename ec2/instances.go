@@ -240,3 +240,46 @@ func (e *Ec2) GetInstanceVolume(ctx context.Context, id, volid string) (*ec2.Vol
 
 	return out.Volumes[0], nil
 }
+
+func (e *Ec2) StartInstance(ctx context.Context, ids ...string) error {
+	if len(ids) == 0 {
+		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+	log.Infof("starting instance %s/%v", e.org, ids)
+	inp := &ec2.StartInstancesInput{
+		InstanceIds: aws.StringSlice(ids),
+	}
+	if _, err := e.Service.StartInstancesWithContext(ctx, inp); err != nil {
+		return common.ErrCode("starting instance", err)
+	}
+	return nil
+}
+
+func (e *Ec2) StopInstance(ctx context.Context, force bool, ids ...string) error {
+	if len(ids) == 0 {
+		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+	log.Infof("stopping instance %s/%v", e.org, ids)
+	inp := &ec2.StopInstancesInput{
+		Force:       aws.Bool(force),
+		InstanceIds: aws.StringSlice(ids),
+	}
+	if _, err := e.Service.StopInstancesWithContext(ctx, inp); err != nil {
+		return common.ErrCode("stopping instance", err)
+	}
+	return nil
+}
+
+func (e *Ec2) RebootInstance(ctx context.Context, ids ...string) error {
+	if len(ids) == 0 {
+		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+	log.Infof("rebooting instance %s/%v", e.org, ids)
+	inp := &ec2.StartInstancesInput{
+		InstanceIds: aws.StringSlice(ids),
+	}
+	if _, err := e.Service.StartInstancesWithContext(ctx, inp); err != nil {
+		return common.ErrCode("rebooting instance", err)
+	}
+	return nil
+}
