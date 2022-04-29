@@ -399,13 +399,23 @@ func (s *server) InstanceSendCommandHandler(w http.ResponseWriter, r *http.Reque
 	account := s.mapAccountNumber(vars["account"])
 	id := vars["id"]
 
-	req := SSMSendCommand{}
+	req := SsmCommandRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		msg := fmt.Sprintf("cannot decode body into ssm send command input: %s", err)
 		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
 		return
 	}
 
+	if req.DocumentName == "" {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "DocumentName is required", nil))
+		return
+
+	}
+
+	if len(req.Parameters) == 0 {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "Parameters are required", nil))
+		return
+	}
 	policy, err := sendCommandPolicy()
 	if err != nil {
 		handleError(w, err)

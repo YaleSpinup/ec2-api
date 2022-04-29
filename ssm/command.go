@@ -26,7 +26,7 @@ func (s *SSM) GetCommandInvocation(ctx context.Context, instanceId, commandId st
 }
 
 func (s *SSM) SendCommand(ctx context.Context, input *ssm.SendCommandInput) (*ssm.Command, error) {
-	if input == nil || aws.StringValue(input.DocumentName) == "" {
+	if input == nil {
 		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
 

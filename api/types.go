@@ -728,7 +728,7 @@ type Ec2InstanceStateChangeRequest struct {
 	State string
 }
 
-type SSMSendCommand struct {
+type SsmCommandRequest struct {
 	DocumentName   string               `json:"document_name"`
 	Parameters     map[string][]*string `json:"parameters"`
 	TimeoutSeconds *int64               `json:"timeout"`

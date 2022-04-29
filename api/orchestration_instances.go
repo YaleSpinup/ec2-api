@@ -113,7 +113,7 @@ func (o *ec2Orchestrator) instancesState(ctx context.Context, state string, ids 
 	}
 }
 
-func (o *ssmOrchestrator) sendInstancesCommand(ctx context.Context, req *SSMSendCommand, id ...string) (string, error) {
+func (o *ssmOrchestrator) sendInstancesCommand(ctx context.Context, req *SsmCommandRequest, id ...string) (string, error) {
 	if req == nil {
 		return "", apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
