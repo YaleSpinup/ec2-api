@@ -392,3 +392,57 @@ func (s *server) InstanceStateHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (s *server) CreateAssociationHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	instanceId := vars["id"]
+
+	fmt.Println("account : ", account)
+	fmt.Println("instanceId : ", instanceId)
+
+	req := &SSMCreateRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		msg := fmt.Sprintf("cannot decode body into ssm create input: %s", err)
+		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
+		return
+	}
+	fmt.Println("req : ", req.Document)
+
+	if req.Document == "" {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "Document is mandatory", nil))
+		return
+	}
+
+	fmt.Println("s.session.RoleName : ", s.session.RoleName)
+	fmt.Println("s.session.ExternalID : ", s.session.ExternalID)
+	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
+	fmt.Println("role : ", role)
+
+	session, err := s.assumeRole(
+		r.Context(),
+		s.session.ExternalID,
+		role,
+		"",
+		"arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess",
+	)
+	if err != nil {
+		msg := fmt.Sprintf("failed to assume role in account: %s", account)
+		handleError(w, apierror.New(apierror.ErrForbidden, msg, err))
+		return
+	}
+
+	service := ssm.New(
+		ssm.WithSession(session.Session),
+	)
+	fmt.Println("service : ", service)
+
+	out, err := service.CreateAssociation(r.Context(), instanceId, req.Document)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponseOk(w, out)
+}

@@ -24,3 +24,18 @@ func (s *SSM) DescribeAssociation(ctx context.Context, instanceId, docName strin
 	log.Debugf("got output describing SSM Association: %+v", out)
 	return out, nil
 }
+
+func (s *SSM) CreateAssociation(ctx context.Context, instanceId, docName string) (*ssm.CreateAssociationOutput, error) {
+	if instanceId == "" || docName == "" {
+		return nil, apierror.New(apierror.ErrBadRequest, "both instanceId and docName should be present", nil)
+	}
+	out, err := s.Service.CreateAssociationWithContext(ctx, &ssm.CreateAssociationInput{
+		Name:       aws.String(docName),
+		InstanceId: aws.String(instanceId),
+	})
+	if err != nil {
+		return nil, common.ErrCode("failed to create association", err)
+	}
+	log.Debugf("got output creating SSM Association: %+v", out)
+	return out, nil
+}

@@ -727,3 +727,7 @@ func parseAssociationTargets(rawTgts []*ssm.Target) (tgts []AssociationTarget) {
 type Ec2InstanceStateChangeRequest struct {
 	State string
 }
+
+type SSMCreateRequest struct {
+	Document string
+}
