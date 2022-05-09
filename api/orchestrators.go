@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/YaleSpinup/ec2-api/ec2"
+	"github.com/YaleSpinup/ec2-api/ssm"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -34,6 +35,31 @@ func (s *server) newEc2Orchestrator(ctx context.Context, sp *sessionParams) (*ec
 
 	return &ec2Orchestrator{
 		ec2Client: ec2.New(ec2.WithSession(session.Session)),
+		server:    s,
+	}, nil
+}
+
+type ssmOrchestrator struct {
+	ssmClient *ssm.SSM
+	server    *server
+}
+
+func (s *server) newSSMOrchestrator(ctx context.Context, sp *sessionParams) (*ssmOrchestrator, error) {
+	log.Debugf("initializing ssmOrchestrator")
+
+	session, err := s.assumeRole(
+		ctx,
+		s.session.ExternalID,
+		sp.role,
+		sp.inlinePolicy,
+		sp.policyArns...,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ssmOrchestrator{
+		ssmClient: ssm.New(ssm.WithSession(session.Session)),
 		server:    s,
 	}, nil
 }

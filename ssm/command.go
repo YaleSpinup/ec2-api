@@ -24,3 +24,18 @@ func (s *SSM) GetCommandInvocation(ctx context.Context, instanceId, commandId st
 	log.Debugf("got output describing SSM Command: %+v", out)
 	return out, nil
 }
+
+func (s *SSM) SendCommand(ctx context.Context, input *ssm.SendCommandInput) (*ssm.Command, error) {
+	if input == nil {
+		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	log.Infof("sending command with doc name: %s, params: %+v", aws.StringValue(input.DocumentName), input.Parameters)
+
+	out, err := s.Service.SendCommandWithContext(ctx, input)
+	if err != nil {
+		return nil, common.ErrCode("failed to send command", err)
+	}
+	log.Debugf("got output sending command: %+v", out)
+	return out.Command, nil
+}

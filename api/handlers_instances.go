@@ -393,6 +393,57 @@ func (s *server) InstanceStateHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (s *server) InstanceSendCommandHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	id := vars["id"]
+
+	req := SsmCommandRequest{}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		msg := fmt.Sprintf("cannot decode body into ssm send command input: %s", err)
+		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
+		return
+	}
+
+	if req.DocumentName == "" {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "DocumentName is required", nil))
+		return
+
+	}
+
+	if len(req.Parameters) == 0 {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "Parameters are required", nil))
+		return
+	}
+	policy, err := sendCommandPolicy()
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	orch, err := s.newSSMOrchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess",
+		},
+	})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	out, err := orch.sendInstancesCommand(r.Context(), &req, id)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponseOk(w, out)
+
+}
+
 func (s *server) InstanceIDHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	w.WriteHeader(http.StatusNotImplemented)
