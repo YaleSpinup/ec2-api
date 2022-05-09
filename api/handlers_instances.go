@@ -393,14 +393,16 @@ func (s *server) InstanceStateHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (s *server) InstanceIDHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 func (s *server) CreateAssociationHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
 	account := s.mapAccountNumber(vars["account"])
 	instanceId := vars["id"]
-
-	fmt.Println("account : ", account)
-	fmt.Println("instanceId : ", instanceId)
 
 	req := &SSMCreateRequest{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
@@ -408,17 +410,13 @@ func (s *server) CreateAssociationHandler(w http.ResponseWriter, r *http.Request
 		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
 		return
 	}
-	fmt.Println("req : ", req.Document)
 
 	if req.Document == "" {
 		handleError(w, apierror.New(apierror.ErrBadRequest, "Document is mandatory", nil))
 		return
 	}
 
-	fmt.Println("s.session.RoleName : ", s.session.RoleName)
-	fmt.Println("s.session.ExternalID : ", s.session.ExternalID)
 	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
-	fmt.Println("role : ", role)
 
 	session, err := s.assumeRole(
 		r.Context(),
@@ -436,7 +434,6 @@ func (s *server) CreateAssociationHandler(w http.ResponseWriter, r *http.Request
 	service := ssm.New(
 		ssm.WithSession(session.Session),
 	)
-	fmt.Println("service : ", service)
 
 	out, err := service.CreateAssociation(r.Context(), instanceId, req.Document)
 	if err != nil {
@@ -444,5 +441,107 @@ func (s *server) CreateAssociationHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	handleResponseOk(w, out)
+	handleResponseOk(w, struct{ AssociationId string }{AssociationId: *out.AssociationDescription.AssociationId})
+}
+
+func (s *server) InstancesTagsHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	instanceId := vars["id"]
+
+	req := &Ec2ImageUpdateRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		msg := fmt.Sprintf("cannot decode body into update image input: %s", err)
+		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
+		return
+	}
+
+	if len(req.Tags) == 0 {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required field: tags", nil))
+		return
+	}
+
+	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
+	policy, err := tagCreatePolicy()
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	session, err := s.assumeRole(
+		r.Context(),
+		s.session.ExternalID,
+		role,
+		policy,
+		"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+	)
+	if err != nil {
+		msg := fmt.Sprintf("failed to assume role in account: %s", account)
+		handleError(w, apierror.New(apierror.ErrForbidden, msg, err))
+		return
+	}
+
+	service := ec2.New(
+		ec2.WithSession(session.Session),
+		ec2.WithOrg(s.org),
+	)
+
+	if err := service.UpdateTags(r.Context(), req.Tags, instanceId); err != nil {
+		handleError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *server) InstancesAttributeHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	instanceId := vars["id"]
+
+	req := &Ec2InstancesAttributeUpdateRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		msg := fmt.Sprintf("cannot decode body into update image input: %s", err)
+		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
+		return
+	}
+
+	if len(req.InstanceType) == 0 {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required field: tags", nil))
+		return
+	}
+
+	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
+	policy, err := tagCreatePolicy()
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	session, err := s.assumeRole(
+		r.Context(),
+		s.session.ExternalID,
+		role,
+		policy,
+		"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+	)
+	if err != nil {
+		msg := fmt.Sprintf("failed to assume role in account: %s", account)
+		handleError(w, apierror.New(apierror.ErrForbidden, msg, err))
+		return
+	}
+
+	service := ec2.New(
+		ec2.WithSession(session.Session),
+		ec2.WithOrg(s.org),
+	)
+
+	if err := service.UpdateAttributes(r.Context(), req.InstanceType["value"], instanceId); err != nil {
+		handleError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

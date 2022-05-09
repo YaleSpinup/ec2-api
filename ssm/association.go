@@ -29,10 +29,11 @@ func (s *SSM) CreateAssociation(ctx context.Context, instanceId, docName string)
 	if instanceId == "" || docName == "" {
 		return nil, apierror.New(apierror.ErrBadRequest, "both instanceId and docName should be present", nil)
 	}
-	out, err := s.Service.CreateAssociationWithContext(ctx, &ssm.CreateAssociationInput{
+	inp:=  &ssm.CreateAssociationInput{
 		Name:       aws.String(docName),
 		InstanceId: aws.String(instanceId),
-	})
+	}
+	out, err := s.Service.CreateAssociationWithContext(ctx,inp)
 	if err != nil {
 		return nil, common.ErrCode("failed to create association", err)
 	}

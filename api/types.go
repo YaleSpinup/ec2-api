@@ -656,6 +656,10 @@ func toSSMGetCommandInvocationOutput(rawOut *ssm.GetCommandInvocationOutput) *SS
 type Ec2ImageUpdateRequest struct {
 	Tags map[string]string
 }
+
+type Ec2InstancesAttributeUpdateRequest struct {
+	InstanceType map[string]string `json:"instance_type,omitempty"`
+}
 type AssociationDescription struct {
 	Name                        string              `json:"name"`
 	InstanceId                  string              `json:"instance_id"`
@@ -731,3 +735,4 @@ type Ec2InstanceStateChangeRequest struct {
 type SSMCreateRequest struct {
 	Document string
 }
+
