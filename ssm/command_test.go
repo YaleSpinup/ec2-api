@@ -32,6 +32,16 @@ func (m *mockSSMClient) GetCommandInvocationWithContext(ctx context.Context, inp
 	}, nil
 }
 
+func (m *mockSSMClient) SendCommandWithContext(ctx aws.Context, inp *ssm.SendCommandInput, opt ...request.Option) (*ssm.SendCommandOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return &ssm.SendCommandOutput{
+		Command: &ssm.Command{CommandId: aws.String("Command-123")},
+	}, nil
+
+}
+
 func TestSSM_GetCommandInvocation(t *testing.T) {
 	type fields struct {
 		session *session.Session
@@ -102,6 +112,60 @@ func TestSSM_GetCommandInvocation(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Ec2.GetCommandInvocation() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSSM_SendCommand(t *testing.T) {
+	type fields struct {
+		session *session.Session
+		Service ssmiface.SSMAPI
+	}
+	type args struct {
+		ctx   context.Context
+		input *ssm.SendCommandInput
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		s       *SSM
+		args    args
+		want    *ssm.Command
+		wantErr bool
+	}{
+		{
+			name:   "valid input",
+			fields: fields{Service: newMockSSMClient(t, nil)},
+			args:   args{ctx: context.TODO(), input: &ssm.SendCommandInput{}},
+			want:   &ssm.Command{CommandId: aws.String("Command-123")},
+		},
+		{
+			name:    "valid input, aws error",
+			fields:  fields{Service: newMockSSMClient(t, errors.New("some error"))},
+			args:    args{ctx: context.TODO(), input: &ssm.SendCommandInput{}},
+			wantErr: true,
+		},
+		{
+			name:    "invalid input",
+			fields:  fields{Service: newMockSSMClient(t, errors.New("some error"))},
+			args:    args{ctx: context.TODO(), input: nil},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &SSM{
+				session: tt.fields.session,
+				Service: tt.fields.Service,
+			}
+			got, err := s.SendCommand(tt.args.ctx, tt.args.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("SSM.SendCommand() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("SSM.SendCommand() = %v, want %v", got, tt.want)
 			}
 		})
 	}
