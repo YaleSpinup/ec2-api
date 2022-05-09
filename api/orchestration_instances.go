@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awsutil"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/ssm"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -110,4 +111,23 @@ func (o *ec2Orchestrator) instancesState(ctx context.Context, state string, ids 
 		msg := fmt.Sprintf("unknown power state %q", state)
 		return apierror.New(apierror.ErrBadRequest, msg, nil)
 	}
+}
+
+func (o *ssmOrchestrator) sendInstancesCommand(ctx context.Context, req *SsmCommandRequest, id ...string) (string, error) {
+	if req == nil {
+		return "", apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	log.Debugf("got request to send command: %s", awsutil.Prettify(req))
+	input := &ssm.SendCommandInput{
+		DocumentName:   aws.String(req.DocumentName),
+		Parameters:     req.Parameters,
+		TimeoutSeconds: req.TimeoutSeconds,
+		InstanceIds:    aws.StringSlice(id),
+	}
+	cmd, err := o.ssmClient.SendCommand(ctx, input)
+	if err != nil {
+		return "", err
+	}
+	return aws.StringValue(cmd.CommandId), nil
 }

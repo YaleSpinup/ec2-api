@@ -195,7 +195,7 @@ func tagCreatePolicy() (string, error) {
 }
 
 func volumeCreatePolicy() (string, error) {
-	log.Debugf("generating volume crete policy document")
+	log.Debugf("generating volume create policy document")
 
 	policy := iam.PolicyDocument{
 		Version: "2012-10-17",
@@ -253,6 +253,30 @@ func changeInstanceStatePolicy() (string, error) {
 					"ec2:StartInstances",
 					"ec2:StopInstances",
 					"ec2:RebootInstances",
+				},
+				Resource: []string{"*"},
+			},
+		},
+	}
+
+	j, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+
+	return string(j), nil
+}
+
+func sendCommandPolicy() (string, error) {
+	log.Debugf("generating send command policy document")
+
+	policy := iam.PolicyDocument{
+		Version: "2012-10-17",
+		Statement: []iam.StatementEntry{
+			{
+				Effect: "Allow",
+				Action: []string{
+					"ssm:SendCommand",
 				},
 				Resource: []string{"*"},
 			},
