@@ -654,11 +654,12 @@ func toSSMGetCommandInvocationOutput(rawOut *ssm.GetCommandInvocationOutput) *SS
 }
 
 type Ec2ImageUpdateRequest struct {
-	Tags map[string]string
+	Tags map[string]string `json:"tags"`
 }
 
-type Ec2InstancesAttributeUpdateRequest struct {
-	InstanceType map[string]string `json:"instance_type,omitempty"`
+type Ec2InstanceUpdateRequest struct {
+	Tags         map[string]string `json:"tags"`
+	InstanceType map[string]string `json:"instance_type"`
 }
 type AssociationDescription struct {
 	Name                        string              `json:"name"`
@@ -729,11 +730,11 @@ func parseAssociationTargets(rawTgts []*ssm.Target) (tgts []AssociationTarget) {
 }
 
 type Ec2InstanceStateChangeRequest struct {
-	State string
+	State string `json:"state"`
 }
 
-type SSMCreateRequest struct {
-	Document string
+type SSMAssociationRequest struct {
+	Document string `json:"document"`
 }
 
 type SsmCommandRequest struct {
