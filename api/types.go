@@ -733,3 +733,14 @@ type SsmCommandRequest struct {
 	Parameters     map[string][]*string `json:"parameters"`
 	TimeoutSeconds *int64               `json:"timeout"`
 }
+
+type Ec2VolumeUpdateTagRequest struct {
+	Tags map[string]string
+}
+
+type Ec2VolumeUpdateRequest struct { // TODO we need to add fields
+
+	type string
+	size int
+    iops int
+}
