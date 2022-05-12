@@ -9,7 +9,6 @@ import (
 	"github.com/YaleSpinup/apierror"
 	"github.com/YaleSpinup/ec2-api/ec2"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/gorilla/mux"
 )
 
@@ -48,7 +47,7 @@ func (s *server) VolumeCreateHandler(w http.ResponseWriter, r *http.Request) {
 		req.Encrypted = aws.Bool(false)
 	}
 
-	policy, err := volumeCreatePolicy()
+	policy, err := createPolicy([]string{"ec2:CreateVolume"})
 	if err != nil {
 		handleError(w, err)
 		return
@@ -288,21 +287,21 @@ func (s *server) VolumeListSnapshotsHandler(w http.ResponseWriter, r *http.Reque
 	handleResponseOk(w, list)
 }
 
-func (s *server) VolumesHandler(w http.ResponseWriter, r *http.Request) {
+func (s *server) VolumeUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
 	account := s.mapAccountNumber(vars["account"])
 	id := vars["id"]
 
-	req := &Ec2VolumeUpdateRequest{} // TODO, need to modify this once payload is confirmed
+	req := &Ec2VolumeUpdateRequest{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		msg := fmt.Sprintf("cannot decode body into update image input: %s", err)
+		msg := fmt.Sprintf("cannot decode body into update volume input: %s", err)
 		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
 		return
 	}
 
 	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
-	policy, err := tagCreatePolicy()
+	policy, err := createPolicy([]string{"ec2:ModifyVolume"})
 	if err != nil {
 		handleError(w, err)
 		return
@@ -326,7 +325,7 @@ func (s *server) VolumesHandler(w http.ResponseWriter, r *http.Request) {
 		ec2.WithOrg(s.org),
 	)
 
-	if err := service.ModifyVolume(r.Context(), id); err != nil { // Need to update parameters
+	if _, err := service.ModifyVolume(r.Context(), req.Iops, req.Type, req.Size, id); err != nil {
 		handleError(w, err)
 		return
 	}

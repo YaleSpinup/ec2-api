@@ -194,17 +194,15 @@ func tagCreatePolicy() (string, error) {
 	return string(j), nil
 }
 
-func volumeCreatePolicy() (string, error) {
+func createPolicy(actions []string) (string, error) {
 	log.Debugf("generating volume create policy document")
 
 	policy := iam.PolicyDocument{
 		Version: "2012-10-17",
 		Statement: []iam.StatementEntry{
 			{
-				Effect: "Allow",
-				Action: []string{
-					"ec2:CreateVolume",
-				},
+				Effect:   "Allow",
+				Action:   actions,
 				Resource: []string{"*"},
 			},
 		},

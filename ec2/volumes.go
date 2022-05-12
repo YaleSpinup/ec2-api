@@ -187,19 +187,21 @@ func (e *Ec2) ListVolumeSnapshots(ctx context.Context, id string) ([]string, err
 	return snapshots, nil
 }
 
-func (e *Ec2) ModifyVolume(ctx context.Context, id string) (*ec2.VolumeModification, error) {
-	if input == nil {
-		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+func (e *Ec2) ModifyVolume(ctx context.Context, iops int64, volumeType string, size int64, id string) (*ec2.VolumeModification, error) {
+	input := ec2.ModifyVolumeInput{
+		Iops:       aws.Int64(iops),
+		VolumeType: aws.String(volumeType),
+		Size:       aws.Int64(size),
+		VolumeId:   aws.String(id),
 	}
+	log.Infof("Modifying volume of type %s, size %d, iop %d", volumeType, size, iops)
 
-	log.Infof("creating volume of type %s, size %d", aws.StringValue(input.VolumeType), aws.Int64Value(input.Size))
-
-	out, err := e.Service.ModifyVolumeWithContext(ctx, input)
+	out, err := e.Service.ModifyVolumeWithContext(ctx, &input)
 	if err != nil {
-		return nil, common.ErrCode("failed to create volume", err)
+		return nil, common.ErrCode("failed to modify volume", err)
 	}
 
-	log.Debugf("got output creating volume: %+v", out)
+	log.Debugf("got output modify volume: %+v", out)
 
 	if out == nil {
 		return nil, apierror.New(apierror.ErrInternalError, "Unexpected volume output", nil)

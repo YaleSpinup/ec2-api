@@ -738,9 +738,8 @@ type Ec2VolumeUpdateTagRequest struct {
 	Tags map[string]string
 }
 
-type Ec2VolumeUpdateRequest struct { // TODO we need to add fields
-
-	type string
-	size int
-    iops int
+type Ec2VolumeUpdateRequest struct {
+	Type string `json:"type"`
+	Size int64  `json:"size"`
+	Iops int64  `json:"iops"`
 }

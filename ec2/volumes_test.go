@@ -36,6 +36,13 @@ func (m mockEC2Client) DeleteVolumeWithContext(ctx context.Context, input *ec2.D
 	return &ec2.DeleteVolumeOutput{}, nil
 }
 
+func (m mockEC2Client) ModifyVolumeWithContext(ctx context.Context, input *ec2.ModifyVolumeInput, opts ...request.Option) (*ec2.ModifyVolumeOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return &ec2.ModifyVolumeOutput{VolumeModification: &ec2.VolumeModification{StatusMessage: aws.String("completed")}}, nil
+}
+
 func TestEc2_CreateVolume(t *testing.T) {
 	type fields struct {
 		session         *session.Session
@@ -189,6 +196,55 @@ func TestEc2_DeleteVolume(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Ec2.DeleteVolume() error = %v, wantErr %v", err, tt.wantErr)
 				return
+			}
+		})
+	}
+}
+
+func TestEc2_ModifyVolume(t *testing.T) {
+	type fields struct {
+		Service ec2iface.EC2API
+	}
+	type args struct {
+		ctx        context.Context
+		iops       int64
+		volumeType string
+		size       int64
+		id         string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *ec2.VolumeModification
+		wantErr bool
+	}{
+		{
+			name:    "success case",
+			args:    args{ctx: context.TODO(), iops: 1234, volumeType: "v-123", size: 456, id: "id-123"},
+			fields:  fields{Service: newmockEC2Client(t, nil)},
+			want:    &ec2.VolumeModification{StatusMessage: aws.String("completed")},
+			wantErr: false,
+		},
+		{
+			name:    "aws error",
+			args:    args{ctx: context.TODO(), iops: 1234, volumeType: "v-123", size: 456, id: "id-123"},
+			fields:  fields{Service: newmockEC2Client(t, awserr.New("Bad Request", "boom.", nil))},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Ec2{
+				Service: tt.fields.Service,
+			}
+			got, err := e.ModifyVolume(tt.args.ctx, tt.args.iops, tt.args.volumeType, tt.args.size, tt.args.id)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Ec2.ModifyVolume() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Ec2.ModifyVolume() = %v, want %v", got, tt.want)
 			}
 		})
 	}
