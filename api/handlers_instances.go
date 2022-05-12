@@ -444,7 +444,7 @@ func (s *server) InstanceSendCommandHandler(w http.ResponseWriter, r *http.Reque
 
 }
 
-func (s *server) InstanceIDHandler(w http.ResponseWriter, r *http.Request) {
+func (s *server) NotImplementedHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	w.WriteHeader(http.StatusNotImplemented)
 }
@@ -468,12 +468,17 @@ func (s *server) InstanceSSMAssociationHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
+	policy, err := ssmAssociationPolicy()
+	if err != nil {
+		handleError(w, err)
+		return
+	}
 
 	session, err := s.assumeRole(
 		r.Context(),
 		s.session.ExternalID,
 		role,
-		"",
+		policy,
 		"arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess",
 	)
 	if err != nil {
@@ -509,12 +514,15 @@ func (s *server) InstanceUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(req.Tags) == 0 && len(req.InstanceType) == 0 {
-		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required fields", nil))
+		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required fields: tags or instance_type", nil))
+		return
+	} else if len(req.Tags) > 0 && len(req.InstanceType) > 0 {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "only one of these fields should be provided: tags or instance_type", nil))
 		return
 	}
 
 	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
-	policy, err := tagCreatePolicy()
+	policy, err := instanceUpdatePolicy()
 	if err != nil {
 		handleError(w, err)
 		return
