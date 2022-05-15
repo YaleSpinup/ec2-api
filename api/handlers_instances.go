@@ -480,6 +480,7 @@ func (s *server) InstanceSSMAssociationHandler(w http.ResponseWriter, r *http.Re
 		role,
 		policy,
 		"arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess",
+		"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
 	)
 	if err != nil {
 		msg := fmt.Sprintf("failed to assume role in account: %s", account)
