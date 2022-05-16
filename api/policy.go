@@ -194,7 +194,7 @@ func tagCreatePolicy() (string, error) {
 	return string(j), nil
 }
 
-func createPolicy(actions []string) (string, error) {
+func generatePolicy(actions []string) (string, error) {
 	log.Debugf("generating volume create policy document")
 
 	policy := iam.PolicyDocument{

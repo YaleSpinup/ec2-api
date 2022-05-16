@@ -187,16 +187,13 @@ func (e *Ec2) ListVolumeSnapshots(ctx context.Context, id string) ([]string, err
 	return snapshots, nil
 }
 
-func (e *Ec2) ModifyVolume(ctx context.Context, iops int64, volumeType string, size int64, id string) (*ec2.VolumeModification, error) {
-	input := ec2.ModifyVolumeInput{
-		Iops:       aws.Int64(iops),
-		VolumeType: aws.String(volumeType),
-		Size:       aws.Int64(size),
-		VolumeId:   aws.String(id),
+func (e *Ec2) ModifyVolume(ctx context.Context, input *ec2.ModifyVolumeInput) (*ec2.VolumeModification, error) {
+	if input == nil {
+		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
-	log.Infof("Modifying volume of type %s, size %d, iop %d", volumeType, size, iops)
+	log.Infof("Modifying volume of type %s, size %d, iop %d", input.VolumeType, input.Size, input.Iops)
 
-	out, err := e.Service.ModifyVolumeWithContext(ctx, &input)
+	out, err := e.Service.ModifyVolumeWithContext(ctx, input)
 	if err != nil {
 		return nil, common.ErrCode("failed to modify volume", err)
 	}
