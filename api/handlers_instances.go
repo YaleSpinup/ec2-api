@@ -498,7 +498,7 @@ func (s *server) InstanceSSMAssociationHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	handleResponseOk(w, struct{ AssociationId string }{AssociationId: *out.AssociationDescription.AssociationId})
+	handleResponseOk(w, aws.StringValue(out.AssociationDescription.AssociationId))
 }
 
 func (s *server) InstanceUpdateHandler(w http.ResponseWriter, r *http.Request) {
