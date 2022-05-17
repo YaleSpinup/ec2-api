@@ -191,7 +191,7 @@ func (e *Ec2) ModifyVolume(ctx context.Context, input *ec2.ModifyVolumeInput) (*
 	if input == nil {
 		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
-	log.Infof("Modifying volume of type %s, size %d, iop %d", input.VolumeType, input.Size, input.Iops)
+	log.Infof("Modifying volume of type %s, size %d, iop %d", aws.StringValue(input.VolumeType), aws.Int64Value(input.Size), aws.Int64Value(input.Iops))
 
 	out, err := e.Service.ModifyVolumeWithContext(ctx, input)
 	if err != nil {

@@ -206,11 +206,8 @@ func TestEc2_ModifyVolume(t *testing.T) {
 		Service ec2iface.EC2API
 	}
 	type args struct {
-		ctx        context.Context
-		iops       int64
-		volumeType string
-		size       int64
-		id         string
+		ctx   context.Context
+		input *ec2.ModifyVolumeInput
 	}
 	tests := []struct {
 		name    string
@@ -221,14 +218,14 @@ func TestEc2_ModifyVolume(t *testing.T) {
 	}{
 		{
 			name:    "success case",
-			args:    args{ctx: context.TODO(), iops: 1234, volumeType: "v-123", size: 456, id: "id-123"},
+			args:    args{ctx: context.TODO(), input: &ec2.ModifyVolumeInput{Iops: aws.Int64(1234), VolumeType: aws.String("v-123"), Size: aws.Int64(456), VolumeId: aws.String("id-123")}},
 			fields:  fields{Service: newmockEC2Client(t, nil)},
 			want:    &ec2.VolumeModification{StatusMessage: aws.String("completed")},
 			wantErr: false,
 		},
 		{
 			name:    "aws error",
-			args:    args{ctx: context.TODO(), iops: 1234, volumeType: "v-123", size: 456, id: "id-123"},
+			args:    args{ctx: context.TODO(), input: &ec2.ModifyVolumeInput{Iops: aws.Int64(1234), VolumeType: aws.String("v-123"), Size: aws.Int64(456), VolumeId: aws.String("id-123")}},
 			fields:  fields{Service: newmockEC2Client(t, awserr.New("Bad Request", "boom.", nil))},
 			wantErr: true,
 		},
@@ -238,7 +235,7 @@ func TestEc2_ModifyVolume(t *testing.T) {
 			e := &Ec2{
 				Service: tt.fields.Service,
 			}
-			got, err := e.ModifyVolume(tt.args.ctx, tt.args.iops, tt.args.volumeType, tt.args.size, tt.args.id)
+			got, err := e.ModifyVolume(tt.args.ctx, tt.args.input)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Ec2.ModifyVolume() error = %v, wantErr %v", err, tt.wantErr)
 				return
