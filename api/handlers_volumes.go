@@ -287,7 +287,7 @@ func (s *server) VolumeListSnapshotsHandler(w http.ResponseWriter, r *http.Reque
 	handleResponseOk(w, list)
 }
 
-func (s *server) VolumeUpdateHandler(w http.ResponseWriter, r *http.Request) {
+func (s *server) VolumesUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
 	account := s.mapAccountNumber(vars["account"])
@@ -299,143 +299,47 @@ func (s *server) VolumeUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
 		return
 	}
+	isTagsUpdateReq := len(req.Tags) != 0
+	isModifyVolReq := req.Type != "" && req.Size != 0 && req.Iops != 0
 
-	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
-	policy, err := generatePolicy([]string{"ec2:ModifyVolume"})
+	if isModifyVolReq == isTagsUpdateReq {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "request should either update tags or modify request", nil))
+		return
+	}
+
+	var policy string
+	var err error
+
+	if isTagsUpdateReq {
+		policy, err = tagCreatePolicy()
+	} else {
+		policy, err = generatePolicy([]string{"ec2:CreateVolume"})
+	}
+
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	session, err := s.assumeRole(
-		r.Context(),
-		s.session.ExternalID,
-		role,
-		policy,
-		"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
-	)
-	if err != nil {
-		msg := fmt.Sprintf("failed to assume role in account: %s", account)
-		handleError(w, apierror.New(apierror.ErrForbidden, msg, err))
-		return
-	}
-
-	service := ec2.New(
-		ec2.WithSession(session.Session),
-		ec2.WithOrg(s.org),
-	)
-
-	if _, err := service.ModifyVolume(r.Context(), req.Iops, req.Type, req.Size, id); err != nil {
-		handleError(w, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
-}
-
-func (s *server) VolumesTagsHandler(w http.ResponseWriter, r *http.Request) {
-	w = LogWriter{w}
-	vars := mux.Vars(r)
-	account := s.mapAccountNumber(vars["account"])
-	id := vars["id"]
-
-	req := &Ec2VolumeUpdateTagRequest{}
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		msg := fmt.Sprintf("cannot decode body into update image input: %s", err)
-		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
-		return
-	}
-
-	if len(req.Tags) == 0 {
-		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required field: tags", nil))
-		return
-	}
-
-	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
-	policy, err := tagCreatePolicy()
+	orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+		},
+	})
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	session, err := s.assumeRole(
-		r.Context(),
-		s.session.ExternalID,
-		role,
-		policy,
-		"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
-	)
-	if err != nil {
-		msg := fmt.Sprintf("failed to assume role in account: %s", account)
-		handleError(w, apierror.New(apierror.ErrForbidden, msg, err))
-		return
-	}
-
-	service := ec2.New(
-		ec2.WithSession(session.Session),
-		ec2.WithOrg(s.org),
-	)
-
-	if err := service.UpdateTags(r.Context(), req.Tags, id); err != nil {
-		handleError(w, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
-}
-
-func (s *server) VolumesHandler(w http.ResponseWriter, r *http.Request) {
-	w = LogWriter{w}
-	vars := mux.Vars(r)
-	account := s.mapAccountNumber(vars["account"])
-	id := vars["id"]
-
-	req := &Ec2VolumeUpdateRequest{}
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		msg := fmt.Sprintf("cannot decode body into update volume input: %s", err)
-		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
-		return
-	}
-
-	if len(req.Tags) == 0 && len(req.Type) == 0 && req.Size == 0 && req.Iops == 0 {
-		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required fields", nil))
-		return
-	} else if len(req.Tags) > 0 && len(req.Type) > 0 && req.Size > 0 && req.Iops > 0 {
-		handleError(w, apierror.New(apierror.ErrBadRequest, "only one of these fields should be provided", nil))
-		return
-	}
-	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
-	policy, err := tagCreatePolicy()
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-
-	session, err := s.assumeRole(
-		r.Context(),
-		s.session.ExternalID,
-		role,
-		policy,
-		"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
-	)
-	if err != nil {
-		msg := fmt.Sprintf("failed to assume role in account: %s", account)
-		handleError(w, apierror.New(apierror.ErrForbidden, msg, err))
-		return
-	}
-
-	service := ec2.New(
-		ec2.WithSession(session.Session),
-		ec2.WithOrg(s.org),
-	)
-
-	if len(req.Tags) > 0 {
-		if err := service.UpdateTags(r.Context(), req.Tags, id); err != nil {
+	if isTagsUpdateReq {
+		if err := orch.ec2Client.UpdateTags(r.Context(), req.Tags, id); err != nil {
 			handleError(w, err)
 			return
 		}
-	} else if len(req.Type) > 0 {
-		if _, err := service.modifyVolume(r.Context(), req.Iops, req.Type, req.Size, id); err != nil {
+	} else {
+		if _, err := orch.modifyVolume(r.Context(), req, id); err != nil {
 			handleError(w, err)
 			return
 		}

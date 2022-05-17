@@ -734,13 +734,9 @@ type SsmCommandRequest struct {
 	TimeoutSeconds *int64               `json:"timeout"`
 }
 
-type Ec2VolumeUpdateTagRequest struct {
-	Tags map[string]string
-}
-
 type Ec2VolumeUpdateRequest struct {
-	Type string `json:"type"`
-	Size int64  `json:"size"`
-	Iops int64  `json:"iops"`
-	Tags map[string]string
+	Type string            `json:"type"`
+	Size int64             `json:"size"`
+	Iops int64             `json:"iops"`
+	Tags map[string]string `json:"tags,omitempty"`
 }

@@ -73,8 +73,8 @@ func (s *server) routes() {
 	api.HandleFunc("/{account}/instances/{id}/attribute", s.ProxyRequestHandler).Methods(http.MethodPut)
 	api.HandleFunc("/{account}/sgs/{id}", s.SecurityGroupUpdateHandler).Methods(http.MethodPut)
 	api.HandleFunc("/{account}/sgs/{id}/tags", s.ProxyRequestHandler).Methods(http.MethodPut)
-	api.HandleFunc("/{account}/volumes/{id}", s.VolumeUpdateHandler).Methods(http.MethodPut)
-	api.HandleFunc("/{account}/volumes/{id}/tags", s.VolumesTagsHandler).Methods(http.MethodPut)
+	api.HandleFunc("/{account}/volumes/{id}", s.VolumesUpdateHandler).Methods(http.MethodPut)
+	api.HandleFunc("/{account}/volumes/{id}/tags", s.VolumesUpdateHandler).Methods(http.MethodPut)
 
 	api.HandleFunc("/{account}/instances/{id}", s.InstanceDeleteHandler).Methods(http.MethodDelete)
 	api.HandleFunc("/{account}/instances/{id}/volumes/{vid}", s.ProxyRequestHandler).Methods(http.MethodDelete)
