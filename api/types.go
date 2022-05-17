@@ -693,27 +693,37 @@ type AssociationTarget struct {
 
 func toSSMAssociationDescription(rawDesc *ssm.DescribeAssociationOutput) *AssociationDescription {
 	const dateLayout = "2006-01-02 15:04:05 +0000"
+	formatDate := func(t *time.Time) string {
+		if t != nil {
+			return t.Format(dateLayout)
+		}
+		return ""
+	}
+	var status AssociationStatus
+	if rawDesc.AssociationDescription.Status != nil {
+		status.Date = formatDate(rawDesc.AssociationDescription.Status.Date)
+		status.Name = aws.StringValue(rawDesc.AssociationDescription.Status.Name)
+		status.Message = aws.StringValue(rawDesc.AssociationDescription.Status.Message)
+	}
+	var overview AssociationOverview
+	if rawDesc.AssociationDescription.Overview != nil {
+		overview.Status = aws.StringValue(rawDesc.AssociationDescription.Overview.Status)
+		overview.DetailedStatus = aws.StringValue(rawDesc.AssociationDescription.Overview.DetailedStatus)
+	}
 
 	return &AssociationDescription{
-		Name:                      aws.StringValue(rawDesc.AssociationDescription.Name),
-		InstanceId:                aws.StringValue(rawDesc.AssociationDescription.InstanceId),
-		AssociationVersion:        aws.StringValue(rawDesc.AssociationDescription.AssociationVersion),
-		Date:                      rawDesc.AssociationDescription.Date.Format(dateLayout),
-		LastUpdateAssociationDate: rawDesc.AssociationDescription.LastUpdateAssociationDate.Format(dateLayout),
-		Status: AssociationStatus{
-			Date:    rawDesc.AssociationDescription.Status.Date.Format(dateLayout),
-			Name:    aws.StringValue(rawDesc.AssociationDescription.Status.Name),
-			Message: aws.StringValue(rawDesc.AssociationDescription.Status.Message),
-		},
-		Overview: AssociationOverview{
-			Status:         aws.StringValue(rawDesc.AssociationDescription.Overview.Status),
-			DetailedStatus: aws.StringValue(rawDesc.AssociationDescription.Overview.DetailedStatus),
-		},
+		Name:                        aws.StringValue(rawDesc.AssociationDescription.Name),
+		InstanceId:                  aws.StringValue(rawDesc.AssociationDescription.InstanceId),
+		AssociationVersion:          aws.StringValue(rawDesc.AssociationDescription.AssociationVersion),
+		Date:                        formatDate(rawDesc.AssociationDescription.Date),
+		LastUpdateAssociationDate:   formatDate(rawDesc.AssociationDescription.LastUpdateAssociationDate),
+		Status:                      status,
+		Overview:                    overview,
 		DocumentVersion:             aws.StringValue(rawDesc.AssociationDescription.DocumentVersion),
 		AssociationId:               aws.StringValue(rawDesc.AssociationDescription.AssociationId),
 		Targets:                     parseAssociationTargets(rawDesc.AssociationDescription.Targets),
-		LastExecutionDate:           rawDesc.AssociationDescription.LastExecutionDate.Format(dateLayout),
-		LastSuccessfulExecutionDate: rawDesc.AssociationDescription.LastSuccessfulExecutionDate.Format(dateLayout),
+		LastExecutionDate:           formatDate(rawDesc.AssociationDescription.LastExecutionDate),
+		LastSuccessfulExecutionDate: formatDate(rawDesc.AssociationDescription.LastSuccessfulExecutionDate),
 		ApplyOnlyAtCronInterval:     aws.BoolValue(rawDesc.AssociationDescription.ApplyOnlyAtCronInterval),
 	}
 }
