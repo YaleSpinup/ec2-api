@@ -654,7 +654,12 @@ func toSSMGetCommandInvocationOutput(rawOut *ssm.GetCommandInvocationOutput) *SS
 }
 
 type Ec2ImageUpdateRequest struct {
-	Tags map[string]string
+	Tags map[string]string `json:"tags"`
+}
+
+type Ec2InstanceUpdateRequest struct {
+	Tags         map[string]string `json:"tags"`
+	InstanceType map[string]string `json:"instance_type"`
 }
 type AssociationDescription struct {
 	Name                        string              `json:"name"`
@@ -687,28 +692,31 @@ type AssociationTarget struct {
 }
 
 func toSSMAssociationDescription(rawDesc *ssm.DescribeAssociationOutput) *AssociationDescription {
-	const dateLayout = "2006-01-02 15:04:05 +0000"
+	var status AssociationStatus
+	if rawDesc.AssociationDescription.Status != nil {
+		status.Date = tzTimeFormat(rawDesc.AssociationDescription.Status.Date)
+		status.Name = aws.StringValue(rawDesc.AssociationDescription.Status.Name)
+		status.Message = aws.StringValue(rawDesc.AssociationDescription.Status.Message)
+	}
+	var overview AssociationOverview
+	if rawDesc.AssociationDescription.Overview != nil {
+		overview.Status = aws.StringValue(rawDesc.AssociationDescription.Overview.Status)
+		overview.DetailedStatus = aws.StringValue(rawDesc.AssociationDescription.Overview.DetailedStatus)
+	}
 
 	return &AssociationDescription{
-		Name:                      aws.StringValue(rawDesc.AssociationDescription.Name),
-		InstanceId:                aws.StringValue(rawDesc.AssociationDescription.InstanceId),
-		AssociationVersion:        aws.StringValue(rawDesc.AssociationDescription.AssociationVersion),
-		Date:                      rawDesc.AssociationDescription.Date.Format(dateLayout),
-		LastUpdateAssociationDate: rawDesc.AssociationDescription.LastUpdateAssociationDate.Format(dateLayout),
-		Status: AssociationStatus{
-			Date:    rawDesc.AssociationDescription.Status.Date.Format(dateLayout),
-			Name:    aws.StringValue(rawDesc.AssociationDescription.Status.Name),
-			Message: aws.StringValue(rawDesc.AssociationDescription.Status.Message),
-		},
-		Overview: AssociationOverview{
-			Status:         aws.StringValue(rawDesc.AssociationDescription.Overview.Status),
-			DetailedStatus: aws.StringValue(rawDesc.AssociationDescription.Overview.DetailedStatus),
-		},
+		Name:                        aws.StringValue(rawDesc.AssociationDescription.Name),
+		InstanceId:                  aws.StringValue(rawDesc.AssociationDescription.InstanceId),
+		AssociationVersion:          aws.StringValue(rawDesc.AssociationDescription.AssociationVersion),
+		Date:                        tzTimeFormat(rawDesc.AssociationDescription.Date),
+		LastUpdateAssociationDate:   tzTimeFormat(rawDesc.AssociationDescription.LastUpdateAssociationDate),
+		Status:                      status,
+		Overview:                    overview,
 		DocumentVersion:             aws.StringValue(rawDesc.AssociationDescription.DocumentVersion),
 		AssociationId:               aws.StringValue(rawDesc.AssociationDescription.AssociationId),
 		Targets:                     parseAssociationTargets(rawDesc.AssociationDescription.Targets),
-		LastExecutionDate:           rawDesc.AssociationDescription.LastExecutionDate.Format(dateLayout),
-		LastSuccessfulExecutionDate: rawDesc.AssociationDescription.LastSuccessfulExecutionDate.Format(dateLayout),
+		LastExecutionDate:           tzTimeFormat(rawDesc.AssociationDescription.LastExecutionDate),
+		LastSuccessfulExecutionDate: tzTimeFormat(rawDesc.AssociationDescription.LastSuccessfulExecutionDate),
 		ApplyOnlyAtCronInterval:     aws.BoolValue(rawDesc.AssociationDescription.ApplyOnlyAtCronInterval),
 	}
 }
@@ -725,7 +733,11 @@ func parseAssociationTargets(rawTgts []*ssm.Target) (tgts []AssociationTarget) {
 }
 
 type Ec2InstanceStateChangeRequest struct {
-	State string
+	State string `json:"state"`
+}
+
+type SSMAssociationRequest struct {
+	Document string `json:"document"`
 }
 
 type SsmCommandRequest struct {

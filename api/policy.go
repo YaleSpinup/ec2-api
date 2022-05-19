@@ -290,3 +290,51 @@ func sendCommandPolicy() (string, error) {
 
 	return string(j), nil
 }
+
+func instanceUpdatePolicy() (string, error) {
+	log.Debugf("generating tag create policy document")
+	policy := iam.PolicyDocument{
+		Version: "2012-10-17",
+		Statement: []iam.StatementEntry{
+			{
+				Effect: "Allow",
+				Action: []string{
+					"ec2:CreateTags",
+					"ec2:ModifyInstanceAttribute",
+				},
+				Resource: []string{"*"},
+			},
+		},
+	}
+
+	j, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+
+	return string(j), nil
+}
+
+func ssmAssociationPolicy() (string, error) {
+	log.Debugf("generating tag create policy document")
+	policy := iam.PolicyDocument{
+		Version: "2012-10-17",
+		Statement: []iam.StatementEntry{
+			{
+				Effect: "Allow",
+				Action: []string{
+					"ssm:CreateAssociation",
+					"ssm:UpdateAssociation",
+				},
+				Resource: []string{"*"},
+			},
+		},
+	}
+
+	j, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+
+	return string(j), nil
+}
