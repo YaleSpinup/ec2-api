@@ -134,39 +134,35 @@ func TestSSM_CreateAssociation(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *ssm.CreateAssociationOutput
+		want    string
 		wantErr bool
 	}{
 		{
-			name:   "valid input",
-			fields: fields{Service: newMockSSMClient(t, nil)},
-			args:   args{ctx: context.TODO(), instanceId: "i-123", docName: "doc123"},
-			want: &ssm.CreateAssociationOutput{
-				AssociationDescription: &ssm.AssociationDescription{
-					AssociationId: aws.String("id123"),
-				},
-			},
+			name:    "valid input",
+			fields:  fields{Service: newMockSSMClient(t, nil)},
+			args:    args{ctx: context.TODO(), instanceId: "i-123", docName: "doc123"},
+			want:    "id123",
 			wantErr: false,
 		},
 		{
 			name:    "valid input, error from aws",
 			fields:  fields{Service: newMockSSMClient(t, errors.New("some error"))},
 			args:    args{ctx: context.TODO(), instanceId: "i-123", docName: "doc123"},
-			want:    nil,
+			want:    "",
 			wantErr: true,
 		},
 		{
 			name:    "invalid input, instance id is empty",
 			fields:  fields{Service: newMockSSMClient(t, nil)},
 			args:    args{ctx: context.TODO(), instanceId: "", docName: "doc123"},
-			want:    nil,
+			want:    "",
 			wantErr: true,
 		},
 		{
 			name:    "invalid input, document name is empty",
 			fields:  fields{Service: newMockSSMClient(t, nil)},
 			args:    args{ctx: context.TODO(), instanceId: "i-123", docName: ""},
-			want:    nil,
+			want:    "",
 			wantErr: true,
 		},
 	}
@@ -182,8 +178,8 @@ func TestSSM_CreateAssociation(t *testing.T) {
 				t.Errorf("SSM.CreateAssociation() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("SSM.CreateAssociation() = %v, want %v", got, tt.want)
+			if got != tt.want {
+				t.Errorf("SSM.CreateAssociation() = %s, want %s", got, tt.want)
 			}
 		})
 	}
