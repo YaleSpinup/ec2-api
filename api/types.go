@@ -692,16 +692,9 @@ type AssociationTarget struct {
 }
 
 func toSSMAssociationDescription(rawDesc *ssm.DescribeAssociationOutput) *AssociationDescription {
-	const dateLayout = "2006-01-02 15:04:05 +0000"
-	formatDate := func(t *time.Time) string {
-		if t != nil {
-			return t.Format(dateLayout)
-		}
-		return ""
-	}
 	var status AssociationStatus
 	if rawDesc.AssociationDescription.Status != nil {
-		status.Date = formatDate(rawDesc.AssociationDescription.Status.Date)
+		status.Date = tzTimeFormat(rawDesc.AssociationDescription.Status.Date)
 		status.Name = aws.StringValue(rawDesc.AssociationDescription.Status.Name)
 		status.Message = aws.StringValue(rawDesc.AssociationDescription.Status.Message)
 	}
@@ -715,15 +708,15 @@ func toSSMAssociationDescription(rawDesc *ssm.DescribeAssociationOutput) *Associ
 		Name:                        aws.StringValue(rawDesc.AssociationDescription.Name),
 		InstanceId:                  aws.StringValue(rawDesc.AssociationDescription.InstanceId),
 		AssociationVersion:          aws.StringValue(rawDesc.AssociationDescription.AssociationVersion),
-		Date:                        formatDate(rawDesc.AssociationDescription.Date),
-		LastUpdateAssociationDate:   formatDate(rawDesc.AssociationDescription.LastUpdateAssociationDate),
+		Date:                        tzTimeFormat(rawDesc.AssociationDescription.Date),
+		LastUpdateAssociationDate:   tzTimeFormat(rawDesc.AssociationDescription.LastUpdateAssociationDate),
 		Status:                      status,
 		Overview:                    overview,
 		DocumentVersion:             aws.StringValue(rawDesc.AssociationDescription.DocumentVersion),
 		AssociationId:               aws.StringValue(rawDesc.AssociationDescription.AssociationId),
 		Targets:                     parseAssociationTargets(rawDesc.AssociationDescription.Targets),
-		LastExecutionDate:           formatDate(rawDesc.AssociationDescription.LastExecutionDate),
-		LastSuccessfulExecutionDate: formatDate(rawDesc.AssociationDescription.LastSuccessfulExecutionDate),
+		LastExecutionDate:           tzTimeFormat(rawDesc.AssociationDescription.LastExecutionDate),
+		LastSuccessfulExecutionDate: tzTimeFormat(rawDesc.AssociationDescription.LastSuccessfulExecutionDate),
 		ApplyOnlyAtCronInterval:     aws.BoolValue(rawDesc.AssociationDescription.ApplyOnlyAtCronInterval),
 	}
 }
