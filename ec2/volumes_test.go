@@ -229,6 +229,12 @@ func TestEc2_ModifyVolume(t *testing.T) {
 			fields:  fields{Service: newmockEC2Client(t, awserr.New("Bad Request", "boom.", nil))},
 			wantErr: true,
 		},
+		{
+			name:    "nil input",
+			args:    args{ctx: context.TODO()},
+			fields:  fields{Service: newmockEC2Client(t, nil)},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -195,7 +195,7 @@ func tagCreatePolicy() (string, error) {
 }
 
 func generatePolicy(actions []string) (string, error) {
-	log.Debugf("generating volume create policy document")
+	log.Debugf("generating %v policy document", actions)
 
 	policy := iam.PolicyDocument{
 		Version: "2012-10-17",

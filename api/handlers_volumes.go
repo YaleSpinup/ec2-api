@@ -287,7 +287,7 @@ func (s *server) VolumeListSnapshotsHandler(w http.ResponseWriter, r *http.Reque
 	handleResponseOk(w, list)
 }
 
-func (s *server) VolumesUpdateHandler(w http.ResponseWriter, r *http.Request) {
+func (s *server) VolumeUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
 	account := s.mapAccountNumber(vars["account"])
@@ -299,21 +299,19 @@ func (s *server) VolumesUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
 		return
 	}
-	isTagsUpdateReq := len(req.Tags) != 0
-	isModifyVolReq := req.Type != "" && req.Size != 0 && req.Iops != 0
 
-	if isModifyVolReq == isTagsUpdateReq {
-		handleError(w, apierror.New(apierror.ErrBadRequest, "request should either update tags or modify request", nil))
+	if (req.Tags != nil) == (req.Type != nil || req.Size != nil || req.Iops != nil) {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "request should either update tags or modify volume", nil))
 		return
 	}
 
 	var policy string
 	var err error
 
-	if isTagsUpdateReq {
+	if req.Tags != nil {
 		policy, err = tagCreatePolicy()
 	} else {
-		policy, err = generatePolicy([]string{"ec2:CreateVolume"})
+		policy, err = generatePolicy([]string{"ec2:ModifyVolume"})
 	}
 
 	if err != nil {
@@ -333,8 +331,8 @@ func (s *server) VolumesUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if isTagsUpdateReq {
-		if err := orch.ec2Client.UpdateTags(r.Context(), req.Tags, id); err != nil {
+	if req.Tags != nil {
+		if err := orch.ec2Client.UpdateTags(r.Context(), *req.Tags, id); err != nil {
 			handleError(w, err)
 			return
 		}
