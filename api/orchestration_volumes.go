@@ -48,3 +48,24 @@ func (o *ec2Orchestrator) deleteVolume(ctx context.Context, id string) error {
 
 	return nil
 }
+
+func (o *ec2Orchestrator) modifyVolume(ctx context.Context, req *Ec2VolumeUpdateRequest, id string) (string, error) {
+	if req == nil || id == "" {
+		return "", apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	log.Debugf("got request to modify volume: %s", awsutil.Prettify(req))
+
+	input := &ec2.ModifyVolumeInput{
+		Iops:       req.Iops,
+		VolumeType: req.Type,
+		Size:       req.Size,
+		VolumeId:   aws.String(id),
+	}
+	out, err := o.ec2Client.ModifyVolume(ctx, input)
+	if err != nil {
+		return "", err
+	}
+
+	return aws.StringValue(out.VolumeId), nil
+}

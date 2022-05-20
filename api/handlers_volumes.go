@@ -47,7 +47,7 @@ func (s *server) VolumeCreateHandler(w http.ResponseWriter, r *http.Request) {
 		req.Encrypted = aws.Bool(false)
 	}
 
-	policy, err := volumeCreatePolicy()
+	policy, err := generatePolicy([]string{"ec2:CreateVolume"})
 	if err != nil {
 		handleError(w, err)
 		return
@@ -285,4 +285,64 @@ func (s *server) VolumeListSnapshotsHandler(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("X-Items", strconv.Itoa(len(out)))
 
 	handleResponseOk(w, list)
+}
+
+func (s *server) VolumeUpdateHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	id := vars["id"]
+
+	req := &Ec2VolumeUpdateRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		msg := fmt.Sprintf("cannot decode body into update volume input: %s", err)
+		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
+		return
+	}
+
+	if (req.Tags != nil) == (req.Type != nil || req.Size != nil || req.Iops != nil) {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "request should either update tags or modify volume", nil))
+		return
+	}
+
+	var policy string
+	var err error
+
+	if req.Tags != nil {
+		policy, err = tagCreatePolicy()
+	} else {
+		policy, err = generatePolicy([]string{"ec2:ModifyVolume"})
+	}
+
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+		},
+	})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	if req.Tags != nil {
+		if err := orch.ec2Client.UpdateTags(r.Context(), *req.Tags, id); err != nil {
+			handleError(w, err)
+			return
+		}
+	} else {
+		if _, err := orch.modifyVolume(r.Context(), req, id); err != nil {
+			handleError(w, err)
+			return
+		}
+
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

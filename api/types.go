@@ -745,3 +745,10 @@ type SsmCommandRequest struct {
 	Parameters     map[string][]*string `json:"parameters"`
 	TimeoutSeconds *int64               `json:"timeout"`
 }
+
+type Ec2VolumeUpdateRequest struct {
+	Type *string            `json:"type"`
+	Size *int64             `json:"size"`
+	Iops *int64             `json:"iops"`
+	Tags *map[string]string `json:"tags,omitempty"`
+}
