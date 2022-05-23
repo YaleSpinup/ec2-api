@@ -76,3 +76,25 @@ func (e *Ec2) GetImage(ctx context.Context, ids ...string) ([]*ec2.Image, error)
 
 	return out.Images, nil
 }
+
+// CreateImage creates a new image and returns the image details
+func (e *Ec2) CreateImage(ctx context.Context, input *ec2.RunInstancesInput) (*ec2.Instance, error) {
+	if input == nil {
+		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	log.Infof("creating instance of type %s", aws.StringValue(input.InstanceType))
+
+	out, err := e.Service.RunInstancesWithContext(ctx, input)
+	if err != nil {
+		return nil, common.ErrCode("failed to create instance", err)
+	}
+
+	log.Debugf("got output creating instance: %+v", out)
+
+	if out == nil || len(out.Instances) != 1 {
+		return nil, apierror.New(apierror.ErrBadRequest, "Unexpected instance count", nil)
+	}
+
+	return out.Instances[0], nil
+}
