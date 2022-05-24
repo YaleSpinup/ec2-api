@@ -56,53 +56,14 @@ func (s *server) SecurityGroupUpdateHandler(w http.ResponseWriter, r *http.Reque
 	account := s.mapAccountNumber(vars["account"])
 	id := vars["id"]
 
-	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
-	policy, err := sgUpdatePolicy(id)
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-
 	req := &Ec2SecurityGroupRuleRequest{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		handleError(w, err)
 		return
 	}
 
-	orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
-		inlinePolicy: policy,
-		role:         role,
-		policyArns: []string{
-			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
-		},
-	})
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-
-	if err := orch.updateSecurityGroup(r.Context(), id, req); err != nil {
-		handleError(w, err)
-		return
-	}
-
-	handleResponseOk(w, nil)
-}
-
-func (s *server) SecurityUpdateHandler(w http.ResponseWriter, r *http.Request) {
-	w = LogWriter{w}
-	vars := mux.Vars(r)
-	account := s.mapAccountNumber(vars["account"])
-	id := vars["id"]
-
-	req := &Ec2SecurityGroupRuleRequest{}
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		handleError(w, err)
-		return
-	}
-
-	if (req.Tags != nil) == (req.RuleType != nil || req.Action != nil || req.CidrIp != nil || req.SgId != nil || req.IpProtocol != nil || req.FromPort != nil || req.ToPort != nil) {
-		handleError(w, apierror.New(apierror.ErrBadRequest, "request should either update tags or modify volume", nil))
+	if (req.Tags != nil) == (req.RuleType != nil) {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "request should either update tags or modify security group", nil))
 		return
 	}
 
@@ -138,15 +99,14 @@ func (s *server) SecurityUpdateHandler(w http.ResponseWriter, r *http.Request) {
 			handleError(w, err)
 			return
 		}
+		w.WriteHeader(http.StatusNoContent)
 	} else {
 		if err := orch.updateSecurityGroup(r.Context(), id, req); err != nil {
 			handleError(w, err)
 			return
 		}
-
+		handleResponseOk(w, nil)
 	}
-
-	handleResponseOk(w, nil)
 }
 
 func (s *server) SecurityGroupListHandler(w http.ResponseWriter, r *http.Request) {
