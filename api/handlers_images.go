@@ -149,7 +149,6 @@ func (s *server) ImageCreateHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
 	account := s.mapAccountNumber(vars["account"])
-	id := vars["id"]
 
 	req := &Ec2ImageCreateRequest{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
@@ -158,40 +157,35 @@ func (s *server) ImageCreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(req.InstanceId) == 0 || len(req.Name) == 0 || len(req.Description) == 0 || CopyTags == nil || ForceReboot == nil {
-		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required fields: instance_id or name or  description or copy_tags or force_reboot", nil))
+	if req.InstanceId == nil || req.Name == nil || req.CopyTags == nil || req.ForceReboot == nil {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required fields: instance_id, name, copy_tags, force_reboot", nil))
 		return
 	}
 
-	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
-	policy, err := tagCreatePolicy()
+	policy, err := generatePolicy([]string{"ec2:CreateImage"})
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	session, err := s.assumeRole(
-		r.Context(),
-		s.session.ExternalID,
-		role,
-		policy,
-		"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
-	)
+	orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+		},
+	})
 	if err != nil {
-		msg := fmt.Sprintf("failed to assume role in account: %s", account)
-		handleError(w, apierror.New(apierror.ErrForbidden, msg, err))
-		return
-	}
-
-	service := ec2.New(
-		ec2.WithSession(session.Session),
-		ec2.WithOrg(s.org),
-	)
-
-	if err := service.CreateImage(r.Context(), req.Tags, id); err != nil {
 		handleError(w, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	imageId, err := orch.createImage(r.Context(), req)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(imageId))
 }
