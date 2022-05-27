@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -111,4 +112,49 @@ func (s *server) SnapshotGetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handleResponseOk(w, toEC2SnapshotResponse(out[0]))
+}
+
+func (s *server) CreateSnapshotHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+
+	req := &Ec2SnapshotCreateRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		msg := fmt.Sprintf("cannot decode body into update image input: %s", err)
+		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
+		return
+	}
+
+	if req.VolumeId == nil || req.CopyTags == nil {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required fields: volume_id, copy_tags", nil))
+		return
+	}
+
+	policy, err := generatePolicy([]string{"ec2:CreateSnapshot"})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+		},
+	})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	snapshotId, err := orch.createSnapshot(r.Context(), req)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(snapshotId))
 }
