@@ -80,7 +80,7 @@ func Test_withInstanceId(t *testing.T) {
 			name: "with instance id",
 			args: args{id: "i-abcdefg0123"},
 			want: &ec2.Filter{
-				Name: aws.String("tag:spinup:instanceid"),
+				Name: aws.String("attachment.instance-id"),
 				Values: aws.StringSlice(
 					[]string{"i-abcdefg0123"},
 				),
