@@ -15,7 +15,7 @@ func (o *ec2Orchestrator) createImage(ctx context.Context, req *Ec2ImageCreateRe
 		return "", apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
 
-	log.Debugf("got request to create instance: %s", awsutil.Prettify(req))
+	log.Debugf("got request to create image: %s", awsutil.Prettify(req))
 
 	instance, err := o.ec2Client.GetInstance(ctx, *req.InstanceId)
 	if err != nil {
@@ -26,10 +26,9 @@ func (o *ec2Orchestrator) createImage(ctx context.Context, req *Ec2ImageCreateRe
 		InstanceId:  req.InstanceId,
 		Name:        req.Name,
 		Description: req.Description,
+		NoReboot:    aws.Bool(!aws.BoolValue(req.ForceReboot)),
 	}
-	input.NoReboot = aws.Bool(!aws.BoolValue(req.ForceReboot))
 	if aws.BoolValue(req.CopyTags) {
-
 		input.TagSpecifications = []*ec2.TagSpecification{{
 			ResourceType: aws.String("image"),
 			Tags:         instance.Tags,

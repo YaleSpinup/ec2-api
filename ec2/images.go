@@ -92,7 +92,7 @@ func (e *Ec2) CreateImage(ctx context.Context, input *ec2.CreateImageInput) (str
 
 	log.Debugf("got output creating image: %+v", out)
 
-	if out == nil || len(aws.StringValue(out.ImageId)) != 1 {
+	if out == nil || len(aws.StringValue(out.ImageId)) == 0 {
 		return "", apierror.New(apierror.ErrBadRequest, "unexpected create image response", nil)
 	}
 

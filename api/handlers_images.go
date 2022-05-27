@@ -8,6 +8,7 @@ import (
 
 	"github.com/YaleSpinup/apierror"
 	"github.com/YaleSpinup/ec2-api/ec2"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/gorilla/mux"
 )
 
@@ -152,14 +153,17 @@ func (s *server) ImageCreateHandler(w http.ResponseWriter, r *http.Request) {
 
 	req := &Ec2ImageCreateRequest{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		msg := fmt.Sprintf("cannot decode body into update image input: %s", err)
+		msg := fmt.Sprintf("cannot decode body into create image input: %s", err)
 		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
 		return
 	}
 
-	if req.InstanceId == nil || req.Name == nil || req.CopyTags == nil || req.ForceReboot == nil {
-		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required fields: instance_id, name, copy_tags, force_reboot", nil))
+	if req.InstanceId == nil || req.Name == nil {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required fields: instance_id, name", nil))
 		return
+	}
+	if req.ForceReboot == nil {
+		req.ForceReboot = aws.Bool(false)
 	}
 
 	policy, err := generatePolicy([]string{"ec2:CreateImage"})
@@ -180,12 +184,11 @@ func (s *server) ImageCreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imageId, err := orch.createImage(r.Context(), req)
+	out, err := orch.createImage(r.Context(), req)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(imageId))
+	handleResponseOk(w, out)
 }
