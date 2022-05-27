@@ -165,6 +165,9 @@ func (s *server) ImageCreateHandler(w http.ResponseWriter, r *http.Request) {
 	if req.ForceReboot == nil {
 		req.ForceReboot = aws.Bool(false)
 	}
+	if req.CopyTags == nil {
+		req.CopyTags = aws.Bool(true)
+	}
 
 	policy, err := generatePolicy([]string{"ec2:CreateImage"})
 	if err != nil {
