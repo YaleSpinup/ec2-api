@@ -121,14 +121,17 @@ func (s *server) CreateSnapshotHandler(w http.ResponseWriter, r *http.Request) {
 
 	req := &Ec2SnapshotCreateRequest{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		msg := fmt.Sprintf("cannot decode body into update image input: %s", err)
+		msg := fmt.Sprintf("cannot decode body into update volume input: %s", err)
 		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
 		return
 	}
-
-	if req.VolumeId == nil || req.CopyTags == nil {
-		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required fields: volume_id, copy_tags", nil))
+	fmt.Println("req", *req)
+	if req.VolumeId == nil {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required fields: volume_id", nil))
 		return
+	}
+	if req.CopyTags == nil {
+		req.CopyTags = aws.Bool(true)
 	}
 
 	policy, err := generatePolicy([]string{"ec2:CreateSnapshot"})
@@ -149,12 +152,11 @@ func (s *server) CreateSnapshotHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	snapshotId, err := orch.createSnapshot(r.Context(), req)
+	out, err := orch.createSnapshot(r.Context(), req)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(snapshotId))
+	handleResponseOk(w, out)
 }

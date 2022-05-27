@@ -303,9 +303,9 @@ type Ec2SnapshotResponse struct {
 }
 
 type Ec2SnapshotCreateRequest struct {
-	VolumeId    *string `json:"volume_id`
-	Description *string `json:"description`
-	CopyTags    *bool   `json:"copy_tags`
+	VolumeId    *string `json:"volume_id"`
+	Description *string `json:"description"`
+	CopyTags    *bool   `json:"copy_tags"`
 }
 
 func toEC2SnapshotResponse(snapshot *ec2.Snapshot) *Ec2SnapshotResponse {

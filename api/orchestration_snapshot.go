@@ -17,9 +17,12 @@ func (o *ec2Orchestrator) createSnapshot(ctx context.Context, req *Ec2SnapshotCr
 
 	log.Debugf("got request to create snapshot: %s", awsutil.Prettify(req))
 
-	instance, err := o.ec2Client.GetVolume(ctx, id)
+	volumes, err := o.ec2Client.GetVolume(ctx, *req.VolumeId)
 	if err != nil {
 		return "", apierror.New(apierror.ErrBadRequest, err.Error(), nil)
+	}
+	if len(volumes) == 0 {
+		return "", apierror.New(apierror.ErrBadRequest, "volume information not found", nil)
 	}
 
 	input := &ec2.CreateSnapshotInput{
@@ -30,7 +33,7 @@ func (o *ec2Orchestrator) createSnapshot(ctx context.Context, req *Ec2SnapshotCr
 	if aws.BoolValue(req.CopyTags) {
 		input.TagSpecifications = []*ec2.TagSpecification{{
 			ResourceType: aws.String("snapshot"),
-			Tags:         instance.Tags,
+			Tags:         volumes[0].Tags,
 		}}
 	}
 

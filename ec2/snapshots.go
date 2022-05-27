@@ -71,7 +71,6 @@ func (e *Ec2) GetSnapshot(ctx context.Context, ids ...string) ([]*ec2.Snapshot, 
 }
 
 func (e *Ec2) CreateSnapshot(ctx context.Context, input *ec2.CreateSnapshotInput) (string, error) {
-
 	if input == nil {
 		return "", apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
@@ -83,7 +82,7 @@ func (e *Ec2) CreateSnapshot(ctx context.Context, input *ec2.CreateSnapshotInput
 
 	log.Debugf("got output creating snapshot: %+v", out)
 
-	if out == nil || len(aws.StringValue(out.SnapshotId)) != 1 {
+	if out == nil || len(aws.StringValue(out.SnapshotId)) == 0 {
 		return "", apierror.New(apierror.ErrBadRequest, "unexpected create snapshot response", nil)
 	}
 
