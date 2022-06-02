@@ -114,7 +114,7 @@ func (s *server) SnapshotGetHandler(w http.ResponseWriter, r *http.Request) {
 	handleResponseOk(w, toEC2SnapshotResponse(out[0]))
 }
 
-func (s *server) CreateSnapshotHandler(w http.ResponseWriter, r *http.Request) {
+func (s *server) SnapshotCreateHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
 	account := s.mapAccountNumber(vars["account"])
@@ -125,7 +125,6 @@ func (s *server) CreateSnapshotHandler(w http.ResponseWriter, r *http.Request) {
 		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
 		return
 	}
-	fmt.Println("req", *req)
 	if req.VolumeId == nil {
 		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required fields: volume_id", nil))
 		return
@@ -134,7 +133,7 @@ func (s *server) CreateSnapshotHandler(w http.ResponseWriter, r *http.Request) {
 		req.CopyTags = aws.Bool(true)
 	}
 
-	policy, err := generatePolicy([]string{"ec2:CreateSnapshot"})
+	policy, err := generatePolicy([]string{"ec2:CreateSnapshot", "ec2:CreateTags"})
 	if err != nil {
 		handleError(w, err)
 		return
