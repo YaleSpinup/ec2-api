@@ -169,7 +169,7 @@ func (s *server) ImageCreateHandler(w http.ResponseWriter, r *http.Request) {
 		req.CopyTags = aws.Bool(true)
 	}
 
-	policy, err := generatePolicy([]string{"ec2:CreateImage"})
+	policy, err := generatePolicy([]string{"ec2:CreateImage", "ec2:CreateTags"})
 	if err != nil {
 		handleError(w, err)
 		return
