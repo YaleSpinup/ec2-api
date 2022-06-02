@@ -43,6 +43,13 @@ type Ec2InstanceCreateRequest struct {
 	Userdata64      *string          `json:"userdata64"`
 	BlockDevices    []Ec2BlockDevice `json:"block_devices"`
 }
+type Ec2ImageCreateRequest struct {
+	InstanceId  *string `json:"instance_id"`
+	Name        *string `json:"name"`
+	Description *string `json:"description"`
+	CopyTags    *bool   `json:"copy_tags"`
+	ForceReboot *bool   `json:"force_reboot"`
+}
 
 type Ec2BlockDevice struct {
 	DeviceName *string       `json:"device_name"`

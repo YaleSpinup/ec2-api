@@ -412,10 +412,6 @@ func (s *server) InstanceSendCommandHandler(w http.ResponseWriter, r *http.Reque
 
 	}
 
-	if len(req.Parameters) == 0 {
-		handleError(w, apierror.New(apierror.ErrBadRequest, "Parameters are required", nil))
-		return
-	}
 	policy, err := sendCommandPolicy()
 	if err != nil {
 		handleError(w, err)
