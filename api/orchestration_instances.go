@@ -131,3 +131,32 @@ func (o *ssmOrchestrator) sendInstancesCommand(ctx context.Context, req *SsmComm
 	}
 	return aws.StringValue(cmd.CommandId), nil
 }
+
+func (o *ec2Orchestrator) attachVolume(ctx context.Context, req *Ec2VolumeAttachment, id string) (string, error) {
+
+	log.Debugf("got request to attach volume: %s", awsutil.Prettify(req))
+
+	input := &ec2.AttachVolumeInput{
+		Device:     aws.String(req.Device),
+		InstanceId: aws.String(id),
+		VolumeId:   aws.String(req.VolumeID),
+	}
+	attributeInput := &ec2.ModifyInstanceAttributeInput{
+		Attribute: aws.String("blockDeviceMapping"),
+		BlockDeviceMappings: []*ec2.InstanceBlockDeviceMappingSpecification{{
+			DeviceName: aws.String(req.Device),
+			Ebs: &ec2.EbsInstanceBlockDeviceSpecification{
+				DeleteOnTermination: aws.Bool(req.DeleteOnTermination),
+				VolumeId:            aws.String(req.VolumeID),
+			},
+		},
+		},
+	}
+
+	out, err := o.ec2Client.AttachVolume(ctx, input, attributeInput)
+	if err != nil {
+		return "", err
+	}
+
+	return out, nil
+}
