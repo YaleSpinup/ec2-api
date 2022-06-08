@@ -69,3 +69,22 @@ func (e *Ec2) GetSnapshot(ctx context.Context, ids ...string) ([]*ec2.Snapshot, 
 
 	return out.Snapshots, nil
 }
+
+func (e *Ec2) CreateSnapshot(ctx context.Context, input *ec2.CreateSnapshotInput) (string, error) {
+	if input == nil {
+		return "", apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+	log.Infof("creating snapshot: %s", aws.StringValue(input.VolumeId))
+	out, err := e.Service.CreateSnapshotWithContext(ctx, input)
+	if err != nil {
+		return "", common.ErrCode("failed to create snapshot", err)
+	}
+
+	log.Debugf("got output creating snapshot: %+v", out)
+
+	if out == nil || len(aws.StringValue(out.SnapshotId)) == 0 {
+		return "", apierror.New(apierror.ErrBadRequest, "unexpected create snapshot response", nil)
+	}
+
+	return aws.StringValue(out.SnapshotId), nil
+}
