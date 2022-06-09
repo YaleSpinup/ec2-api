@@ -42,7 +42,7 @@ func inVpc(vpc string) *ec2.Filter {
 
 func withInstanceId(id string) *ec2.Filter {
 	return &ec2.Filter{
-		Name: aws.String("tag:spinup:instanceid"),
+		Name: aws.String("attachment.instance-id"),
 		Values: aws.StringSlice(
 			[]string{id},
 		),
