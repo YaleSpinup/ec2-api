@@ -283,3 +283,17 @@ func (e *Ec2) RebootInstance(ctx context.Context, ids ...string) error {
 	}
 	return nil
 }
+
+func (s *SSM) DetachVolume(ctx context.Context, instanceId string, force bool) (*ec2.VolumeAttachment, error) {
+	if instanceId == "" || force == "" {
+		return nil, apierror.New(apierror.ErrBadRequest, "both instanceId and commandId should be present", nil)
+	}
+	out, err := s.Service.DetachVolumeWithContext(ctx, &ec2.DetachVolumeInput{
+		CommandId:  aws.String(commandId),
+		force: aws.Bool(force),
+	})
+	if err != nil {
+		return nil, common.ErrCode("failed to get command id", err)
+	}
+	log.Debugf("got output describing SSM Command: %+v", out)
+	return out, nil

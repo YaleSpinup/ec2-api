@@ -557,3 +557,38 @@ func (s *server) InstanceUpdateHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (s *server) VolumeDetachHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	instance_id := vars["id"]
+	force := bool
+
+	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
+
+	session, err := s.assumeRole(
+		r.Context(),
+		s.session.ExternalID,
+		role,
+		"",
+		"arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess",
+	)
+	if err != nil {
+		msg := fmt.Sprintf("failed to assume role in account: %s", account)
+		handleError(w, apierror.New(apierror.ErrForbidden, msg, err))
+		return
+	}
+
+	service := ssm.New(
+		ssm.WithSession(session.Session),
+	)
+
+	out, err := service.DetachVolume(r.Context(), instance_id, force)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponseOk(w, toSSMGetCommandInvocationOutput(out))
+}
