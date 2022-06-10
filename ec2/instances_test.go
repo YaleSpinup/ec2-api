@@ -84,6 +84,16 @@ func (m mockEC2Client) RebootInstancesWithContext(ctx context.Context, input *ec
 	return &ec2.RebootInstancesOutput{}, nil
 }
 
+func (m mockEC2Client) AttachVolumeWithContext(aws.Context, *ec2.AttachVolumeInput, ...request.Option) (*ec2.VolumeAttachment, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+
+	return &ec2.VolumeAttachment{
+		VolumeId: &ec2.VolumeAttachment{VolumeId: aws.String("Volume-123")},
+	}, nil
+}
+
 func TestEc2_CreateInstance(t *testing.T) {
 	type fields struct {
 		session         *session.Session
@@ -499,6 +509,48 @@ func TestEc2_RebootInstance(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Ec2.RebootInstance() error = %v, wantErr %v", err, tt.wantErr)
 				return
+			}
+		})
+	}
+}
+
+func TestEc2_AttachVolume(t *testing.T) {
+	type fields struct {
+		session *session.Session
+		Service ec2iface.EC2API
+	}
+	type args struct {
+		ctx            context.Context
+		input          *ec2.AttachVolumeInput
+		attributeInput *ec2.ModifyInstanceAttributeInput
+	}
+	tests := []struct {
+		name    string
+		e       *Ec2
+		fields  fields
+		args    args
+		want    string
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Ec2{
+				session:         tt.fields.session,
+				Service:         tt.fields.Service,
+				DefaultKMSKeyId: tt.fields.DefaultKMSKeyId,
+				DefaultSgs:      tt.fields.DefaultSgs,
+				DefaultSubnets:  tt.fields.DefaultSubnets,
+				org:             tt.fields.org,
+			}
+			got, err := tt.e.AttachVolume(tt.args.ctx, tt.args.input, tt.args.attributeInput)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Ec2.AttachVolume() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("Ec2.AttachVolume() = %v, want %v", got, tt.want)
 			}
 		})
 	}
