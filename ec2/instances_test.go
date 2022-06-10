@@ -84,14 +84,14 @@ func (m mockEC2Client) RebootInstancesWithContext(ctx context.Context, input *ec
 	return &ec2.RebootInstancesOutput{}, nil
 }
 
-func (m mockEC2Client) AttachVolumeWithContext(aws.Context, *ec2.AttachVolumeInput, ...request.Option) (*ec2.VolumeAttachment, error) {
+func (m mockEC2Client) AttachVolumeWithContext(ctx context.Context, input *ec2.AttachVolumeInput, opts ...request.Option) (*ec2.VolumeAttachment, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
 
 	return &ec2.VolumeAttachment{
-		VolumeId: &ec2.VolumeAttachment{VolumeId: aws.String("Volume-123")},
-	}, nil
+		VolumeId: aws.String("Volume-123")},
+	nil
 }
 
 func TestEc2_CreateInstance(t *testing.T) {
@@ -516,7 +516,7 @@ func TestEc2_RebootInstance(t *testing.T) {
 
 func TestEc2_AttachVolume(t *testing.T) {
 	type fields struct {
-		session *session.Session
+		//session *session.Session
 		Service ec2iface.EC2API
 	}
 	type args struct {
@@ -532,19 +532,32 @@ func TestEc2_AttachVolume(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+				{
+			name:    "success case",
+			args:    args{ctx: context.TODO(), input: &ec2.AttachVolumeInput{Device: aws.String("1234ad"), InstanceId: aws.String("51454"), VolumeId: aws.String("534")}},
+			fields:  fields{Service: newmockEC2Client(t, nil)},
+			want:    "Volume-123",
+			wantErr: false,
+		},
+		{
+			name:    "aws error",
+			args:    args{ctx: context.TODO(), input: &ec2.AttachVolumeInput{Device: aws.String("1234ad"), InstanceId: aws.String("51454"), VolumeId: aws.String("534")}},
+			fields:  fields{Service: newmockEC2Client(t, awserr.New("Bad Request", "boom.", nil))},
+			wantErr: true,
+		},
+		{
+			name:    "nil input",
+			args:    args{ctx: context.TODO()},
+			fields:  fields{Service: newmockEC2Client(t, nil)},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := &Ec2{
-				session:         tt.fields.session,
 				Service:         tt.fields.Service,
-				DefaultKMSKeyId: tt.fields.DefaultKMSKeyId,
-				DefaultSgs:      tt.fields.DefaultSgs,
-				DefaultSubnets:  tt.fields.DefaultSubnets,
-				org:             tt.fields.org,
 			}
-			got, err := tt.e.AttachVolume(tt.args.ctx, tt.args.input, tt.args.attributeInput)
+			got, err := e.AttachVolume(tt.args.ctx, tt.args.input, tt.args.attributeInput)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Ec2.AttachVolume() error = %v, wantErr %v", err, tt.wantErr)
 				return
