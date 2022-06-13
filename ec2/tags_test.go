@@ -44,12 +44,12 @@ func TestEc2_UpdateTags(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{
-			name:    "success case",
-			args:    args{ctx: context.TODO(), tags: inpTags, ids: inpIds},
-			fields:  fields{Service: newmockEC2Client(t, nil)},
-			wantErr: false,
-		},
+		// {
+		// 	name:    "success case",
+		// 	args:    args{ctx: context.TODO(), tags: inpTags, ids: inpIds},
+		// 	fields:  fields{Service: newmockEC2Client(t, nil)},
+		// 	wantErr: false,
+		// },
 		{
 			name:    "aws error",
 			args:    args{ctx: context.TODO(), tags: inpTags, ids: inpIds},
@@ -65,7 +65,7 @@ func TestEc2_UpdateTags(t *testing.T) {
 		{
 			name:    "no ids",
 			fields:  fields{Service: newmockEC2Client(t, nil)},
-			args:    args{ctx: context.TODO(), tags: inpTags, ids: nil},
+			args:    args{ctx: context.TODO(), tags: inpTags, ids: []string{}},
 			wantErr: true,
 		},
 	}

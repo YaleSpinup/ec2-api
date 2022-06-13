@@ -2,6 +2,7 @@ package ec2
 
 import (
 	"context"
+	"strings"
 
 	"github.com/YaleSpinup/apierror"
 	"github.com/YaleSpinup/ec2-api/common"
@@ -17,6 +18,43 @@ func (e *Ec2) UpdateTags(ctx context.Context, rawTags map[string]string, ids ...
 	var tags []*ec2.Tag
 	for key, val := range rawTags {
 		tags = append(tags, &ec2.Tag{Key: aws.String(key), Value: aws.String(val)})
+	}
+
+	instanceIDs := []*string{}
+	for _, id := range ids {
+		if strings.HasPrefix(id, "i-") {
+			instanceIDs = append(instanceIDs, aws.String(id))
+		}
+	}
+
+	describeVolumesInput := ec2.DescribeVolumesInput{
+		Filters: []*ec2.Filter{
+			{
+				Name:   aws.String("attachment.instance-id"),
+				Values: instanceIDs,
+			},
+		},
+		MaxResults: aws.Int64(1000),
+	}
+
+	for {
+		out, err := e.Service.DescribeVolumesWithContext(ctx, &describeVolumesInput)
+		if err != nil {
+			return common.ErrCode("describing volumes for instance", err)
+		}
+
+		log.Debugf("got describe volumes output %+v", out)
+
+		for _, v := range out.Volumes {
+			ids = append(ids, aws.StringValue(v.VolumeId))
+		}
+
+		if out.NextToken != nil {
+			describeVolumesInput.NextToken = out.NextToken
+			continue
+		}
+
+		break
 	}
 
 	log.Infof("updating resources: %v with tags %+v", ids, tags)
