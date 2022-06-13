@@ -563,32 +563,37 @@ func (s *server) VolumeDetachHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	account := s.mapAccountNumber(vars["account"])
 	instance_id := vars["id"]
-	force := bool
-
-	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
-
-	session, err := s.assumeRole(
-		r.Context(),
-		s.session.ExternalID,
-		role,
-		"",
-		"arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess",
-	)
+	volume_id := vars["uid"]
+	force, err := strconv.ParseBool(vars["force"])
 	if err != nil {
-		msg := fmt.Sprintf("failed to assume role in account: %s", account)
-		handleError(w, apierror.New(apierror.ErrForbidden, msg, err))
+		handleError(w, apierror.New(apierror.ErrBadRequest, "invalid value for force parameter", nil))
 		return
 	}
 
-	service := ssm.New(
-		ssm.WithSession(session.Session),
-	)
-
-	out, err := service.DetachVolume(r.Context(), instance_id, force)
+	policy, err := generatePolicy([]string{"ec2:DetachVolume"})
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	handleResponseOk(w, toSSMGetCommandInvocationOutput(out))
+	orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+		},
+	})
+
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	out, err := orch.detachVolume(r.Context(), instance_id, volume_id, force)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponseOk(w, out)
 }

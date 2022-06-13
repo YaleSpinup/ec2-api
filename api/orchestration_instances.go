@@ -131,3 +131,12 @@ func (o *ssmOrchestrator) sendInstancesCommand(ctx context.Context, req *SsmComm
 	}
 	return aws.StringValue(cmd.CommandId), nil
 }
+
+func (o *ec2Orchestrator) detachVolume(ctx context.Context, instance_id, volume_id string, force bool) (string, error){
+
+	log.Debugf("got request to detach volume: %s from instance %s", volume_id, instance_id)
+
+	o.ec2Client.DetachVolume
+
+
+}
