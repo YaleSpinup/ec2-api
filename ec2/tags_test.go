@@ -29,6 +29,13 @@ func (m *mockEC2Client) CreateTagsWithContext(ctx context.Context, input *ec2.Cr
 	return &ec2.CreateTagsOutput{}, nil
 }
 
+func (m *mockEC2Client) DescribeVolumesWithContext(aws aws.Context, inp *ec2.DescribeVolumesInput, opt ...request.Option) (*ec2.DescribeVolumesOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return &ec2.DescribeVolumesOutput{}, nil
+}
+
 func TestEc2_UpdateTags(t *testing.T) {
 	type fields struct {
 		Service ec2iface.EC2API
@@ -44,12 +51,12 @@ func TestEc2_UpdateTags(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// {
-		// 	name:    "success case",
-		// 	args:    args{ctx: context.TODO(), tags: inpTags, ids: inpIds},
-		// 	fields:  fields{Service: newmockEC2Client(t, nil)},
-		// 	wantErr: false,
-		// },
+		{
+			name:    "success case",
+			args:    args{ctx: context.TODO(), tags: inpTags, ids: inpIds},
+			fields:  fields{Service: newmockEC2Client(t, nil)},
+			wantErr: false,
+		},
 		{
 			name:    "aws error",
 			args:    args{ctx: context.TODO(), tags: inpTags, ids: inpIds},
