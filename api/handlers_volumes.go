@@ -34,7 +34,7 @@ func (s *server) VolumeCreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if aws.Int64Value(req.Size) < 1 || aws.Int64Value(req.Size) > 16384 {
+	if req.Size != nil && (aws.Int64Value(req.Size) < 1 || aws.Int64Value(req.Size) > 16384) {
 		handleError(w, apierror.New(apierror.ErrBadRequest, "volume size must be between 1 and 16384", nil))
 		return
 	}
