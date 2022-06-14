@@ -8,6 +8,6 @@ ingress:
   enabled: true
   annotations: {}
   rules:
-    - paths: ['/v1/ec2']
+    - paths: ['/v1/api']
 
-probePath: '/v1/ec2/ping'
+probePath: '/v1/api/ping'
