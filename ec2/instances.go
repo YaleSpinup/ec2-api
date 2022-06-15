@@ -301,10 +301,5 @@ func (e *Ec2) AttachVolume(ctx context.Context, input *ec2.AttachVolumeInput, at
 		return "", apierror.New(apierror.ErrInternalError, "Unexpected volume output", nil)
 	}
 
-	_, err = e.Service.ModifyInstanceAttributeWithContext(ctx, attributeInput)
-	if err != nil {
-		return "", common.ErrCode("failed to add instance attributes", err)
-	}
-
 	return aws.StringValue(out.VolumeId), nil
 }

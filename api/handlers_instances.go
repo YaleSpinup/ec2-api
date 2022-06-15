@@ -563,16 +563,16 @@ func (s *server) VolumeAttachHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	account := s.mapAccountNumber(vars["account"])
 	id := vars["id"]
-	
-	req := &Ec2VolumeAttachment{}
+
+	req := &Ec2VolumeAttachmentRequest{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		msg := fmt.Sprintf("cannot decode body into attach volume input: %s", err)
 		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
 		return
 	}
 
-	if req.Device == "" || req.VolumeID == "" {
-		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required fields: device", nil))
+	if req.Device == nil || req.VolumeID == nil || req.DeleteOnTermination == nil {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required fields: device, volume_id and delete_on_termination", nil))
 		return
 	}
 

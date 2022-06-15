@@ -191,6 +191,12 @@ type Ec2VolumeAttachment struct {
 	DeleteOnTermination bool   `json:"delete_on_termination"`
 }
 
+type Ec2VolumeAttachmentRequest struct {
+	Device              *string `json:"device"`
+	VolumeID            *string `json:"volume_id"`
+	DeleteOnTermination *bool   `json:"delete_on_termination"`
+}
+
 type Ec2VolumeResponse struct {
 	CreatedAt   string                 `json:"created_at"`
 	ID          string                 `json:"id"`

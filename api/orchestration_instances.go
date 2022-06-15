@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/YaleSpinup/apierror"
+	"github.com/YaleSpinup/ec2-api/common"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awsutil"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -132,22 +133,24 @@ func (o *ssmOrchestrator) sendInstancesCommand(ctx context.Context, req *SsmComm
 	return aws.StringValue(cmd.CommandId), nil
 }
 
-func (o *ec2Orchestrator) attachVolume(ctx context.Context, req *Ec2VolumeAttachment, id string) (string, error) {
-
+func (o *ec2Orchestrator) attachVolume(ctx context.Context, req *Ec2VolumeAttachmentRequest, id string) (string, error) {
+	if req == nil || id == "" {
+		return "", apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
 	log.Debugf("got request to attach volume: %s", awsutil.Prettify(req))
 
 	input := &ec2.AttachVolumeInput{
-		Device:     aws.String(req.Device),
+		Device:     req.Device,
 		InstanceId: aws.String(id),
-		VolumeId:   aws.String(req.VolumeID),
+		VolumeId:   req.VolumeID,
 	}
 	attributeInput := &ec2.ModifyInstanceAttributeInput{
 		Attribute: aws.String("blockDeviceMapping"),
 		BlockDeviceMappings: []*ec2.InstanceBlockDeviceMappingSpecification{{
-			DeviceName: aws.String(req.Device),
+			DeviceName: req.Device,
 			Ebs: &ec2.EbsInstanceBlockDeviceSpecification{
-				DeleteOnTermination: aws.Bool(req.DeleteOnTermination),
-				VolumeId:            aws.String(req.VolumeID),
+				DeleteOnTermination: req.DeleteOnTermination,
+				VolumeId:            req.VolumeID,
 			},
 		},
 		},
@@ -156,6 +159,10 @@ func (o *ec2Orchestrator) attachVolume(ctx context.Context, req *Ec2VolumeAttach
 	out, err := o.ec2Client.AttachVolume(ctx, input, attributeInput)
 	if err != nil {
 		return "", err
+	}
+	_, err = o.ec2Client.Service.ModifyInstanceAttributeWithContext(ctx, attributeInput)
+	if err != nil {
+		return "", common.ErrCode("failed to add instance attributes", err)
 	}
 
 	return out, nil
