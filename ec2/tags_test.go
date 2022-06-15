@@ -89,3 +89,68 @@ func TestEc2_UpdateTags(t *testing.T) {
 		})
 	}
 }
+func TestEc2_UpdateInstanceTags(t *testing.T) {
+	type fields struct {
+		Service ec2iface.EC2API
+	}
+	type args struct {
+		ctx   context.Context
+		input *ec2.CreateTagsInput
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "success case",
+			args: args{ctx: context.TODO(), input: &ec2.CreateTagsInput{
+				Resources: aws.StringSlice(inpIds),
+				Tags:      expTags}},
+			fields:  fields{Service: newmockEC2Client(t, nil)},
+			wantErr: false,
+		},
+		{
+			name: "aws error",
+			args: args{ctx: context.TODO(), input: &ec2.CreateTagsInput{
+				Resources: aws.StringSlice(inpIds),
+				Tags:      expTags}},
+			fields:  fields{Service: newmockEC2Client(t, awserr.New("Bad Request", "boom.", nil))},
+			wantErr: true,
+		},
+		{
+			name:   "no tags",
+			fields: fields{Service: newmockEC2Client(t, nil)},
+			args: args{ctx: context.TODO(), input: &ec2.CreateTagsInput{
+				Resources: aws.StringSlice(inpIds),
+				Tags:      nil}},
+			wantErr: true,
+		},
+		{
+			name:   "no ids",
+			fields: fields{Service: newmockEC2Client(t, nil)},
+			args: args{ctx: context.TODO(), input: &ec2.CreateTagsInput{
+				Resources: aws.StringSlice([]string{}),
+				Tags:      expTags}},
+			wantErr: true,
+		},
+		{
+			name:    "no input",
+			fields:  fields{Service: newmockEC2Client(t, nil)},
+			args:    args{ctx: context.TODO(), input: nil},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Ec2{
+				Service: tt.fields.Service,
+			}
+			if err := e.UpdateInstanceTags(tt.args.ctx, tt.args.input); (err != nil) != tt.wantErr {
+				t.Errorf("Ec2.UpdateTags() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
