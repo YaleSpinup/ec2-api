@@ -160,7 +160,7 @@ func (o *ec2Orchestrator) updateInstanceTags(ctx context.Context, rawTags map[st
 		Tags:      tags,
 	}
 
-	if err := o.ec2Client.UpdateInstanceTags(ctx, &input); err != nil {
+	if err := o.ec2Client.UpdateTags(ctx, &input); err != nil {
 		return err
 	}
 

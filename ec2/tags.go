@@ -10,7 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (e *Ec2) UpdateTags(ctx context.Context, rawTags map[string]string, ids ...string) error {
+func (e *Ec2) UpdateRawTags(ctx context.Context, rawTags map[string]string, ids ...string) error {
 	if len(ids) == 0 || len(rawTags) == 0 {
 		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
@@ -33,7 +33,7 @@ func (e *Ec2) UpdateTags(ctx context.Context, rawTags map[string]string, ids ...
 	return nil
 }
 
-func (e *Ec2) UpdateInstanceTags(ctx context.Context, input *ec2.CreateTagsInput) error {
+func (e *Ec2) UpdateTags(ctx context.Context, input *ec2.CreateTagsInput) error {
 	if input == nil {
 		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}

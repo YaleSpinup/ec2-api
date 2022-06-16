@@ -36,7 +36,7 @@ func (m *mockEC2Client) DescribeVolumesWithContext(aws aws.Context, inp *ec2.Des
 	return &ec2.DescribeVolumesOutput{}, nil
 }
 
-func TestEc2_UpdateTags(t *testing.T) {
+func TestEc2_UpdateRawTags(t *testing.T) {
 	type fields struct {
 		Service ec2iface.EC2API
 	}
@@ -81,7 +81,7 @@ func TestEc2_UpdateTags(t *testing.T) {
 			e := &Ec2{
 				Service: tt.fields.Service,
 			}
-			err := e.UpdateTags(tt.args.ctx, tt.args.tags, tt.args.ids...)
+			err := e.UpdateRawTags(tt.args.ctx, tt.args.tags, tt.args.ids...)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Ec2.UpdateTags() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -89,7 +89,7 @@ func TestEc2_UpdateTags(t *testing.T) {
 		})
 	}
 }
-func TestEc2_UpdateInstanceTags(t *testing.T) {
+func TestEc2_UpdateTags(t *testing.T) {
 	type fields struct {
 		Service ec2iface.EC2API
 	}
@@ -147,7 +147,7 @@ func TestEc2_UpdateInstanceTags(t *testing.T) {
 			e := &Ec2{
 				Service: tt.fields.Service,
 			}
-			if err := e.UpdateInstanceTags(tt.args.ctx, tt.args.input); (err != nil) != tt.wantErr {
+			if err := e.UpdateTags(tt.args.ctx, tt.args.input); (err != nil) != tt.wantErr {
 				t.Errorf("Ec2.UpdateTags() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
