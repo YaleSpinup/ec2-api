@@ -518,38 +518,31 @@ func (s *server) InstanceUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
-	policy, err := instanceUpdatePolicy()
+	policy, err := generatePolicy([]string{"ec2:CreateTags", "ec2:ModifyInstanceAttribute"})
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	session, err := s.assumeRole(
-		r.Context(),
-		s.session.ExternalID,
-		role,
-		policy,
-		"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
-	)
+	orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+		},
+	})
 	if err != nil {
-		msg := fmt.Sprintf("failed to assume role in account: %s", account)
-		handleError(w, apierror.New(apierror.ErrForbidden, msg, err))
+		handleError(w, err)
 		return
 	}
 
-	service := ec2.New(
-		ec2.WithSession(session.Session),
-		ec2.WithOrg(s.org),
-	)
-
 	if len(req.Tags) > 0 {
-		if err := service.UpdateTags(r.Context(), req.Tags, instanceId); err != nil {
+		if err := orch.updateInstanceTags(r.Context(), req.Tags, instanceId); err != nil {
 			handleError(w, err)
 			return
 		}
 	} else if len(req.InstanceType) > 0 {
-		if err := service.UpdateAttributes(r.Context(), req.InstanceType["value"], instanceId); err != nil {
+		if err := orch.ec2Client.UpdateAttributes(r.Context(), req.InstanceType["value"], instanceId); err != nil {
 			handleError(w, err)
 			return
 		}

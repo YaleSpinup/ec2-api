@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/YaleSpinup/apierror"
+	"github.com/YaleSpinup/ec2-api/common"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awsutil"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -130,4 +131,38 @@ func (o *ssmOrchestrator) sendInstancesCommand(ctx context.Context, req *SsmComm
 		return "", err
 	}
 	return aws.StringValue(cmd.CommandId), nil
+}
+func (o *ec2Orchestrator) updateInstanceTags(ctx context.Context, rawTags map[string]string, ids ...string) error {
+	if len(ids) == 0 || len(rawTags) == 0 {
+		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+	var tags []*ec2.Tag
+	for key, val := range rawTags {
+		tags = append(tags, &ec2.Tag{Key: aws.String(key), Value: aws.String(val)})
+	}
+
+	volumeIds := []string{}
+	for _, id := range ids {
+		if strings.HasPrefix(id, "i-") {
+			vIds, err := o.ec2Client.ListInstanceVolumes(ctx, id)
+			if err != nil {
+				return common.ErrCode("describing volumes for instance", err)
+			}
+			volumeIds = append(volumeIds, vIds...)
+		}
+	}
+
+	ids = append(ids, volumeIds...)
+	log.Infof("updating resources: %v with tags %+v", ids, tags)
+
+	input := ec2.CreateTagsInput{
+		Resources: aws.StringSlice(ids),
+		Tags:      tags,
+	}
+
+	if err := o.ec2Client.UpdateTags(ctx, &input); err != nil {
+		return err
+	}
+
+	return nil
 }

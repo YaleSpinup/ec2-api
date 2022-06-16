@@ -332,7 +332,7 @@ func (s *server) VolumeUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Tags != nil {
-		if err := orch.ec2Client.UpdateTags(r.Context(), *req.Tags, id); err != nil {
+		if err := orch.ec2Client.UpdateRawTags(r.Context(), *req.Tags, id); err != nil {
 			handleError(w, err)
 			return
 		}
