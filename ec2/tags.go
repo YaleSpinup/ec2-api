@@ -10,7 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (e *Ec2) UpdateTags(ctx context.Context, rawTags map[string]string, ids ...string) error {
+func (e *Ec2) UpdateRawTags(ctx context.Context, rawTags map[string]string, ids ...string) error {
 	if len(ids) == 0 || len(rawTags) == 0 {
 		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
@@ -27,6 +27,20 @@ func (e *Ec2) UpdateTags(ctx context.Context, rawTags map[string]string, ids ...
 	}
 
 	if _, err := e.Service.CreateTagsWithContext(ctx, &input); err != nil {
+		return common.ErrCode("creating tags", err)
+	}
+
+	return nil
+}
+
+func (e *Ec2) UpdateTags(ctx context.Context, input *ec2.CreateTagsInput) error {
+	if input == nil {
+		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	log.Infof("updating tags: %v", input)
+
+	if _, err := e.Service.CreateTagsWithContext(ctx, input); err != nil {
 		return common.ErrCode("creating tags", err)
 	}
 

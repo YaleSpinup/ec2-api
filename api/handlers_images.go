@@ -138,7 +138,7 @@ func (s *server) ImageUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		ec2.WithOrg(s.org),
 	)
 
-	if err := service.UpdateTags(r.Context(), req.Tags, id); err != nil {
+	if err := service.UpdateRawTags(r.Context(), req.Tags, id); err != nil {
 		handleError(w, err)
 		return
 	}

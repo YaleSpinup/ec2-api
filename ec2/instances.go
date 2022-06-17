@@ -140,13 +140,18 @@ func (e *Ec2) ListInstanceVolumes(ctx context.Context, id string) ([]string, err
 		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
 
-	log.Infof("getting snapshots for instance %s/%s", e.org, id)
+	log.Infof("getting volumes for instance %s/%s", e.org, id)
 
 	volumes := []string{}
 
 	input := ec2.DescribeVolumesInput{
 		Filters: []*ec2.Filter{
-			withInstanceId(id),
+			{
+				Name: aws.String("attachment.instance-id"),
+				Values: aws.StringSlice(
+					[]string{id},
+				),
+			},
 		},
 		MaxResults: aws.Int64(1000),
 	}
@@ -154,10 +159,10 @@ func (e *Ec2) ListInstanceVolumes(ctx context.Context, id string) ([]string, err
 	for {
 		out, err := e.Service.DescribeVolumesWithContext(ctx, &input)
 		if err != nil {
-			return nil, common.ErrCode("describing snapshots for volumes", err)
+			return nil, common.ErrCode("describing volumes for instance", err)
 		}
 
-		log.Debugf("got describe snapshots output %+v", out)
+		log.Debugf("got describe volumes output %+v", out)
 
 		for _, v := range out.Volumes {
 			volumes = append(volumes, aws.StringValue(v.VolumeId))
