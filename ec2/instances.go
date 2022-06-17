@@ -284,16 +284,22 @@ func (e *Ec2) RebootInstance(ctx context.Context, ids ...string) error {
 	return nil
 }
 
-func (s *SSM) DetachVolume(ctx context.Context, instanceId string, force bool) (*ec2.VolumeAttachment, error) {
-	if instanceId == "" || force == "" {
-		return nil, apierror.New(apierror.ErrBadRequest, "both instanceId and commandId should be present", nil)
+func (e *Ec2) DetachVolume(ctx context.Context, input *ec2.DetachVolumeInput) (*string, error) {
+	if input == nil {
+		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
-	out, err := s.Service.DetachVolumeWithContext(ctx, &ec2.DetachVolumeInput{
-		CommandId:  aws.String(commandId),
-		force: aws.Bool(force),
-	})
+	log.Infof("detaching volumes %v", input.VolumeId)
+
+	out, err := e.Service.DetachVolumeWithContext(ctx, input)
 	if err != nil {
-		return nil, common.ErrCode("failed to get command id", err)
+		return nil, common.ErrCode("failed to modify volume", err)
 	}
-	log.Debugf("got output describing SSM Command: %+v", out)
-	return out, nil
+
+	log.Debugf("got output to detach volume: %+v", out)
+
+	if out == nil {
+		return nil, apierror.New(apierror.ErrInternalError, "Unexpected volume output", nil)
+	}
+
+	return out.VolumeId, nil
+}

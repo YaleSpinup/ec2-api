@@ -132,11 +132,24 @@ func (o *ssmOrchestrator) sendInstancesCommand(ctx context.Context, req *SsmComm
 	return aws.StringValue(cmd.CommandId), nil
 }
 
-func (o *ec2Orchestrator) detachVolume(ctx context.Context, instance_id, volume_id string, force bool) (string, error){
+func (o *ec2Orchestrator) detachVolume(ctx context.Context, instanceId, volumeId string, force bool) (string, error) {
+	if instanceId == "" || volumeId == "" { // TODO check force != nil
+		return "", apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+		}
+	fmt.Println("print", instanceId, volumeId)
 
-	log.Debugf("got request to detach volume: %s from instance %s", volume_id, instance_id)
+	log.Debugf("got request to detach volume: %s from instance %s", volumeId, instanceId) // TODO update commnets
 
-	o.ec2Client.DetachVolume
+	input := &ec2.DetachVolumeInput{
+		InstanceId: aws.String(instanceId),
+		VolumeId:   aws.String(volumeId),
+		Force:      aws.Bool(force),
+	}
 
+	out, err := o.ec2Client.DetachVolume(ctx, input)
+	if err != nil {
+		return "", err
+	}
 
+	return aws.StringValue(out), nil
 }

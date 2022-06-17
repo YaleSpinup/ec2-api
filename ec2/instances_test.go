@@ -84,6 +84,16 @@ func (m mockEC2Client) RebootInstancesWithContext(ctx context.Context, input *ec
 	return &ec2.RebootInstancesOutput{}, nil
 }
 
+func (m mockEC2Client) DetachVolumeWithContext(ctx context.Context, input *ec2.DetachVolumeInput) (*string, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+
+	return ec2.VolumeId{
+			VolumeId: aws.String("Volume-123")},
+		nil
+}
+
 func TestEc2_CreateInstance(t *testing.T) {
 	type fields struct {
 		session         *session.Session
@@ -499,6 +509,39 @@ func TestEc2_RebootInstance(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Ec2.RebootInstance() error = %v, wantErr %v", err, tt.wantErr)
 				return
+			}
+		})
+	}
+}
+
+func TestEc2_DetachVolume(t *testing.T) {
+	type fields struct {
+		//session *session.Session
+		Service ec2iface.EC2API
+	}
+	type args struct {
+		ctx   context.Context
+		input *ec2.DetachVolumeInput
+	}
+	tests := []struct {
+		name    string
+		e       *Ec2
+		args    args
+		fields  fields
+		want    *string
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := e.DetachVolume(tt.args.ctx, tt.args.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Ec2.DetachVolume() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Ec2.DetachVolume() = %v, want %v", got, tt.want)
 			}
 		})
 	}
