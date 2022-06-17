@@ -292,7 +292,7 @@ func (e *Ec2) DetachVolume(ctx context.Context, input *ec2.DetachVolumeInput) (*
 
 	out, err := e.Service.DetachVolumeWithContext(ctx, input)
 	if err != nil {
-		return nil, common.ErrCode("failed to modify volume", err)
+		return nil, apierror.New(apierror.ErrInternalError, "failed to modify volume", err)
 	}
 
 	log.Debugf("got output to detach volume: %+v", out)
