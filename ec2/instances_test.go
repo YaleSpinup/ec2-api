@@ -522,7 +522,6 @@ func TestEc2_AttachVolume(t *testing.T) {
 	type args struct {
 		ctx            context.Context
 		input          *ec2.AttachVolumeInput
-		attributeInput *ec2.ModifyInstanceAttributeInput
 	}
 	tests := []struct {
 		name    string
@@ -557,7 +556,7 @@ func TestEc2_AttachVolume(t *testing.T) {
 			e := &Ec2{
 				Service:         tt.fields.Service,
 			}
-			got, err := e.AttachVolume(tt.args.ctx, tt.args.input, tt.args.attributeInput)
+			got, err := e.AttachVolume(tt.args.ctx, tt.args.input)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Ec2.AttachVolume() error = %v, wantErr %v", err, tt.wantErr)
 				return

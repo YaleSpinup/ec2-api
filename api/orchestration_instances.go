@@ -156,13 +156,12 @@ func (o *ec2Orchestrator) attachVolume(ctx context.Context, req *Ec2VolumeAttach
 		},
 	}
 
-	out, err := o.ec2Client.AttachVolume(ctx, input, attributeInput)
+	out, err := o.ec2Client.AttachVolume(ctx, input)
 	if err != nil {
 		return "", err
 	}
-	_, err = o.ec2Client.Service.ModifyInstanceAttributeWithContext(ctx, attributeInput)
-	if err != nil {
-		return "", common.ErrCode("failed to add instance attributes", err)
+	if err := o.ec2Client.UpdateAttributes(ctx, attributeInput); err != nil {
+		return "", common.ErrCode("failed to update instance type attributes", err)
 	}
 
 	return out, nil
@@ -200,5 +199,22 @@ func (o *ec2Orchestrator) updateInstanceTags(ctx context.Context, rawTags map[st
 		return err
 	}
 
+	return nil
+}
+
+func (o *ec2Orchestrator) updateInstanceType(ctx context.Context, instanceType string, instanceId string) error {
+	if instanceType == "" || instanceId == "" {
+		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	input := ec2.ModifyInstanceAttributeInput{
+		InstanceType: &ec2.AttributeValue{Value: aws.String(instanceType)},
+		InstanceId:   aws.String(instanceId),
+	}
+
+	err := o.ec2Client.UpdateAttributes(ctx, &input)
+	if err != nil {
+		return common.ErrCode("failed to update instance type attributes", err)
+	}
 	return nil
 }

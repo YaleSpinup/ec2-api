@@ -289,7 +289,7 @@ func (e *Ec2) RebootInstance(ctx context.Context, ids ...string) error {
 	return nil
 }
 
-func (e *Ec2) AttachVolume(ctx context.Context, input *ec2.AttachVolumeInput, attributeInput *ec2.ModifyInstanceAttributeInput) (string, error) {
+func (e *Ec2) AttachVolume(ctx context.Context, input *ec2.AttachVolumeInput) (string, error) {
 	if input == nil {
 		return "", apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}

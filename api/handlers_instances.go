@@ -542,7 +542,7 @@ func (s *server) InstanceUpdateHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else if len(req.InstanceType) > 0 {
-		if err := orch.ec2Client.UpdateAttributes(r.Context(), req.InstanceType["value"], instanceId); err != nil {
+		if err := orch.updateInstanceType(r.Context(), req.InstanceType["value"], instanceId); err != nil {
 			handleError(w, err)
 			return
 		}
