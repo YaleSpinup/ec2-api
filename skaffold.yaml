@@ -1,29 +1,26 @@
-apiVersion: skaffold/v2beta10
+apiVersion: skaffold/v2beta28
 kind: Config
 build:
   local: {}
   artifacts:
-  - image: hub.docker.com/yaleits/ec2-api
-    buildpacks:
-      # https://paketo.io/
-      # https://github.com/paketo-buildpacks/stacks
-      # the "tiny" builder is ideal for
-      # most Go apps, Java GraalVM Native Images
-      builder: paketobuildpacks/builder:tiny
-      # the "full" builder is ideal for
-      # PHP/Node.js/Python/Ruby/etc. apps with many native extensions
-      # builder: paketobuildpacks/builder:full
+  - image: ec2-api
+    docker:
+      dockerfile: docker/Dockerfile.local
+  # Note: switched to using docker builder above
+  # because buildpacks don't support arm64 (breaks on M1)
+  # artifacts:
+  # - image: ec2-api
+  #   buildpacks:
+  #     builder: paketobuildpacks/builder:tiny
 deploy:
-  kubectl:
-    manifests:
-      - k8s/k8s-*
   helm:
     releases:
     - name: ec2api
-      chartPath: k8s/api
       artifactOverrides:
-        image: hub.docker.com/yaleits/ec2-api
+        image: ec2-api
+      chartPath: k8s/api
       setFiles:
         apiconfig: config/config.json
-      valuesFiles:
-        - k8s/values.yaml
+      setValues:
+        probePath: '/v2/ec2/ping'
+        ingress.rules[0].paths[0]: '/v2/ec2'
