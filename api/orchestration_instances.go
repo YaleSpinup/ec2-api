@@ -137,7 +137,7 @@ func (o *ec2Orchestrator) attachVolume(ctx context.Context, req *Ec2VolumeAttach
 	if req == nil || id == "" {
 		return "", apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
-	log.Debugf("got request to attach volume: %s", awsutil.Prettify(req))
+	log.Debugf("got request to attach volume to instance %s: %s", id, awsutil.Prettify(req))
 
 	input := &ec2.AttachVolumeInput{
 		Device:     req.Device,
