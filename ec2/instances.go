@@ -293,7 +293,7 @@ func (e *Ec2) DetachVolume(ctx context.Context, input *ec2.DetachVolumeInput) (*
 	if input == nil {
 		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
-	log.Infof("detaching volumes %v, force = %b", input.VolumeId, aws.BoolValue(input.Force))
+	log.Infof("detaching volumes %v, force = %t", input.VolumeId, aws.BoolValue(input.Force))
 
 	out, err := e.Service.DetachVolumeWithContext(ctx, input)
 	if err != nil {
