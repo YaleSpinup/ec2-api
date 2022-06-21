@@ -516,7 +516,6 @@ func TestEc2_RebootInstance(t *testing.T) {
 
 func TestEc2_DetachVolume(t *testing.T) {
 	type fields struct {
-		//session *session.Session
 		Service ec2iface.EC2API
 	}
 	type args struct {

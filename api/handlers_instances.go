@@ -557,12 +557,16 @@ func (s *server) VolumeDetachHandler(w http.ResponseWriter, r *http.Request) {
 	account := s.mapAccountNumber(vars["account"])
 	instance_id := vars["id"]
 	volume_id := vars["vid"]
-	force, err := strconv.ParseBool(vars["force"])
-	if err != nil {
-		handleError(w, apierror.New(apierror.ErrBadRequest, "invalid value for force parameter", nil))
-		return
+	var force bool
+	if r.URL.Query().Has("force") {
+		var err error
+		force, err = strconv.ParseBool(r.URL.Query().Get("force"))
+		if err != nil {
+			handleError(w, apierror.New(apierror.ErrBadRequest, "invalid value for force parameter", nil))
+			return
+		}
 	}
-	
+
 	policy, err := generatePolicy([]string{"ec2:DetachVolume"})
 	if err != nil {
 		handleError(w, err)
@@ -587,5 +591,5 @@ func (s *server) VolumeDetachHandler(w http.ResponseWriter, r *http.Request) {
 		handleError(w, err)
 		return
 	}
-		handleResponseOk(w, out)
+	handleResponseOk(w, out)
 }
