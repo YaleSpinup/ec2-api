@@ -9,6 +9,7 @@ import (
 	"github.com/YaleSpinup/apierror"
 	"github.com/YaleSpinup/ec2-api/ec2"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service"
 	"github.com/gorilla/mux"
 )
 
@@ -158,4 +159,41 @@ func (s *server) SnapshotCreateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handleResponseOk(w, out)
+}
+
+func (s *server) SnapshotDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	id := vars["id"]
+
+	if id == "" {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required fields: id", nil))
+		return
+	}
+
+	policy, err := generatePolicy([]string{"ec2:DeleteSnapshot"})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+		},
+	})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	if err := orch.ec2Client.DeleteSnapshot(r.Context(), id); err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponseOk(w, nil)
 }
