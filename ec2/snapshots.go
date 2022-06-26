@@ -89,9 +89,9 @@ func (e *Ec2) CreateSnapshot(ctx context.Context, input *ec2.CreateSnapshotInput
 	return aws.StringValue(out.SnapshotId), nil
 }
 
-func (e *Ec2) DeleteSnapshot(ctx context.Context, id string) error {
+func (e *Ec2) DeleteSnapshot(ctx context.Context, id string) (*ec2.DeleteSnapshotOutput, error) {
 	if id == "" {
-		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
 
 	log.Infof("deleting snapshot %s", id)
@@ -100,10 +100,14 @@ func (e *Ec2) DeleteSnapshot(ctx context.Context, id string) error {
 		SnapshotId: aws.String(id),
 	})
 	if err != nil {
-		return common.ErrCode("failed to delete snapshot", err)
+		return nil, common.ErrCode("failed to delete snapshot", err)
 	}
 
-	log.Debugf("got output deleting snapshot: %+v", out)
+	log.Debugf("got output deleting snapshot: %v", out)
 
-	return nil
+	if out == nil {
+		return nil, apierror.New(apierror.ErrInternalError, "Unexpected snapshot deletion output", nil)
+	}
+
+	return out, nil
 }

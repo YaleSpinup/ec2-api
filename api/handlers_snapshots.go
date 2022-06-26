@@ -9,7 +9,6 @@ import (
 	"github.com/YaleSpinup/apierror"
 	"github.com/YaleSpinup/ec2-api/ec2"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service"
 	"github.com/gorilla/mux"
 )
 
@@ -190,10 +189,11 @@ func (s *server) SnapshotDeleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := orch.ec2Client.DeleteSnapshot(r.Context(), id); err != nil {
+	out, err := orch.ec2Client.DeleteSnapshot(r.Context(), id)
+	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	handleResponseOk(w, nil)
+	handleResponseOk(w, out)
 }
