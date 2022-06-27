@@ -288,23 +288,3 @@ func (e *Ec2) RebootInstance(ctx context.Context, ids ...string) error {
 	}
 	return nil
 }
-
-func (e *Ec2) AttachVolume(ctx context.Context, input *ec2.AttachVolumeInput) (string, error) {
-	if input == nil {
-		return "", apierror.New(apierror.ErrBadRequest, "invalid input", nil)
-	}
-	log.Infof("Attaching volume of device %s", aws.StringValue(input.Device))
-
-	out, err := e.Service.AttachVolumeWithContext(ctx, input)
-	if err != nil {
-		return "", common.ErrCode("failed to attach volume", err)
-	}
-
-	log.Debugf("got output attach volume: %+v", out)
-
-	if out == nil {
-		return "", apierror.New(apierror.ErrInternalError, "Unexpected volume output", nil)
-	}
-
-	return aws.StringValue(out.VolumeId), nil
-}
