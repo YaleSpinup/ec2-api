@@ -550,3 +550,46 @@ func (s *server) InstanceUpdateHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (s *server) VolumeDetachHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	instance_id := vars["id"]
+	volume_id := vars["vid"]
+	var force bool
+	if r.URL.Query().Has("force") {
+		var err error
+		force, err = strconv.ParseBool(r.URL.Query().Get("force"))
+		if err != nil {
+			handleError(w, apierror.New(apierror.ErrBadRequest, "invalid value for force parameter", nil))
+			return
+		}
+	}
+
+	policy, err := generatePolicy([]string{"ec2:DetachVolume"})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+		},
+	})
+
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	out, err := orch.detachVolume(r.Context(), instance_id, volume_id, force)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+	handleResponseOk(w, out)
+}

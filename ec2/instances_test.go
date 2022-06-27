@@ -84,6 +84,16 @@ func (m mockEC2Client) RebootInstancesWithContext(ctx context.Context, input *ec
 	return &ec2.RebootInstancesOutput{}, nil
 }
 
+func (m mockEC2Client) DetachVolumeWithContext(ctx context.Context, input *ec2.DetachVolumeInput, opts ...request.Option) (*ec2.VolumeAttachment, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+
+	return &ec2.VolumeAttachment{
+			VolumeId: aws.String("Volume-123")},
+		nil
+}
+
 func TestEc2_CreateInstance(t *testing.T) {
 	type fields struct {
 		session         *session.Session
@@ -499,6 +509,58 @@ func TestEc2_RebootInstance(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Ec2.RebootInstance() error = %v, wantErr %v", err, tt.wantErr)
 				return
+			}
+		})
+	}
+}
+
+func TestEc2_DetachVolume(t *testing.T) {
+	type fields struct {
+		Service ec2iface.EC2API
+	}
+	type args struct {
+		ctx   context.Context
+		input *ec2.DetachVolumeInput
+	}
+	tests := []struct {
+		name    string
+		args    args
+		fields  fields
+		want    *string
+		wantErr bool
+	}{
+		{
+			name:    "success case",
+			args:    args{ctx: context.TODO(), input: &ec2.DetachVolumeInput{InstanceId: aws.String("v-123"), Force: aws.Bool(true), VolumeId: aws.String("id-123")}},
+			fields:  fields{Service: newmockEC2Client(t, nil)},
+			want:    aws.String("Volume-123"),
+			wantErr: false,
+		},
+		{
+			name:    "aws error",
+			args:    args{ctx: context.TODO(), input: &ec2.DetachVolumeInput{InstanceId: aws.String("v-123"), Force: aws.Bool(true), VolumeId: aws.String("id-123")}},
+			fields:  fields{Service: newmockEC2Client(t, awserr.New("Bad Request", "boom.", nil))},
+			wantErr: true,
+		},
+		{
+			name:    "nil input",
+			args:    args{ctx: context.TODO(), input: nil},
+			fields:  fields{Service: newmockEC2Client(t, nil)},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Ec2{
+				Service: tt.fields.Service,
+			}
+			got, err := e.DetachVolume(tt.args.ctx, tt.args.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Ec2.DetachVolume() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Ec2.DetachVolume() = %v, want %v", got, tt.want)
 			}
 		})
 	}
