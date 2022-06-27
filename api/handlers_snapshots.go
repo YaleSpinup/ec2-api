@@ -166,11 +166,6 @@ func (s *server) SnapshotDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	account := s.mapAccountNumber(vars["account"])
 	id := vars["id"]
 
-	if id == "" {
-		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required fields: id", nil))
-		return
-	}
-
 	policy, err := generatePolicy([]string{"ec2:DeleteSnapshot"})
 	if err != nil {
 		handleError(w, err)
@@ -189,11 +184,11 @@ func (s *server) SnapshotDeleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := orch.ec2Client.DeleteSnapshot(r.Context(), id)
+	err = orch.deleteSnapshot(r.Context(), id)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	handleResponseOk(w, out)
+	handleResponseOk(w, nil)
 }

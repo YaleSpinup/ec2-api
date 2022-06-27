@@ -22,7 +22,7 @@ func (m mockEC2Client) DeleteSnapshotWithContext(aws.Context, *ec2.DeleteSnapsho
 	if m.err != nil {
 		return nil, m.err
 	}
-	return SnapID{"Test-1234"}, nil
+	return &ec2.DeleteSnapshotOutput{}, nil
 }
 
 func TestEc2_CreateSnapshot(t *testing.T) {
@@ -83,24 +83,36 @@ func TestEc2_DeleteSnapshot(t *testing.T) {
 		Service ec2iface.EC2API
 	}
 	type args struct {
-		ctx context.Context
-		id  string
+		ctx   context.Context
+		input *ec2.DeleteSnapshotInput
 	}
 	tests := []struct {
 		name    string
 		fields  fields
+		e       *Ec2
 		args    args
-		want    *ec2.DeleteSnapshotOutput
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "success case",
+			args: args{ctx: context.TODO(), input: &ec2.DeleteSnapshotInput{
+				SnapshotId: aws.String("3514")}},
+			fields:  fields{Service: newmockEC2Client(t, nil)},
+			wantErr: false,
+		},
+		{
+			name:    "aws error",
+			args:    args{ctx: context.TODO(), input: &ec2.DeleteSnapshotInput{SnapshotId: aws.String("1234")}},
+			fields:  fields{Service: newmockEC2Client(t, awserr.New("Bad Request", "boom.", nil))},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := &Ec2{
 				Service: tt.fields.Service,
 			}
-			if err := e.DeleteSnapshot(tt.args.ctx, tt.args.id); (err != nil) != tt.wantErr {
+			if err := e.DeleteSnapshot(tt.args.ctx, tt.args.input); (err != nil) != tt.wantErr {
 				t.Errorf("Ec2.DeleteSnapshot() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

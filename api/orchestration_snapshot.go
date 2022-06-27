@@ -45,16 +45,17 @@ func (o *ec2Orchestrator) createSnapshot(ctx context.Context, req *Ec2SnapshotCr
 	return snapshotId, nil
 }
 
-// func (o *ec2Orchestrator) deleteSnapshot(ctx context.Context, id string) error {
-// 	if id == "" {
-// 		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
-// 	}
+func (o *ec2Orchestrator) deleteSnapshot(ctx context.Context, id string) error {
+	
+	log.Debugf("got request to delete snapshot %s", id)
 
-// 	log.Debugf("got request to delete snapshot %s", id)
+	input := &ec2.DeleteSnapshotInput{
+		SnapshotId: aws.String(id),
+	}
 
-// 	if err := o.ec2Client.DeleteSnapshot(ctx, id); err != nil {
-// 		return err
-// 	}
+	if err := o.ec2Client.DeleteSnapshot(ctx, input); err != nil {
+		return err
+	}
 
-// 	return nil
-// }
+	return nil
+}
