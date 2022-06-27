@@ -516,9 +516,6 @@ func (s *server) InstanceUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	} else if len(req.Tags) > 0 && len(req.InstanceType) > 0 {
 		handleError(w, apierror.New(apierror.ErrBadRequest, "only one of these fields should be provided: tags or instance_type", nil))
 		return
-	} else if _, ok := req.InstanceType["value"]; len(req.InstanceType) > 0 && !ok {
-		handleError(w, apierror.New(apierror.ErrBadRequest, "missing instance_type value", nil))
-		return
 	}
 
 	policy, err := generatePolicy([]string{"ec2:CreateTags", "ec2:ModifyInstanceAttribute"})
@@ -545,6 +542,10 @@ func (s *server) InstanceUpdateHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else if len(req.InstanceType) > 0 {
+		if _, ok := req.InstanceType["value"]; !ok {
+			handleError(w, apierror.New(apierror.ErrBadRequest, "missing instance_type value", nil))
+			return
+		}
 		if err := orch.updateInstanceType(r.Context(), req.InstanceType["value"], instanceId); err != nil {
 			handleError(w, err)
 			return

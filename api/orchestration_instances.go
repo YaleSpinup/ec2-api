@@ -145,7 +145,8 @@ func (o *ec2Orchestrator) attachVolume(ctx context.Context, req *Ec2VolumeAttach
 		VolumeId:   req.VolumeID,
 	}
 	attributeInput := &ec2.ModifyInstanceAttributeInput{
-		Attribute: aws.String("blockDeviceMapping"),
+		InstanceId: aws.String(id),
+		Attribute:  aws.String("blockDeviceMapping"),
 		BlockDeviceMappings: []*ec2.InstanceBlockDeviceMappingSpecification{{
 			DeviceName: req.Device,
 			Ebs: &ec2.EbsInstanceBlockDeviceSpecification{
