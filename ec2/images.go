@@ -99,16 +99,14 @@ func (e *Ec2) CreateImage(ctx context.Context, input *ec2.CreateImageInput) (str
 	return aws.StringValue(out.ImageId), nil
 }
 
-func (e *Ec2) DeleteImage(ctx context.Context, id string) (*ec2.DeregisterImageOutput, error) {
-	if id == "" {
+func (e *Ec2) DeleteImage(ctx context.Context, input *ec2.DeregisterImageInput) (*ec2.DeregisterImageOutput, error) {
+	if input == nil {
 		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
 
-	log.Infof("deregistering image  %s", id)
+	log.Infof("deregistering image  %s", *input.ImageId)
 
-	out, err := e.Service.DeregisterImageWithContext(ctx, &ec2.DeregisterImageInput{
-		ImageId: aws.String(id),
-	})
+	out, err := e.Service.DeregisterImageWithContext(ctx, input)
 	if err != nil {
 		return nil, common.ErrCode("failed to deregister image", err)
 	}

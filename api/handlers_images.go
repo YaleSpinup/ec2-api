@@ -220,11 +220,11 @@ func (s *server) ImageDeleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := orch.ec2Client.DeleteImage(r.Context(), id)
+	err = orch.deleteImage(r.Context(), id)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	handleResponseOk(w, out)
+	handleResponseOk(w, nil)
 }

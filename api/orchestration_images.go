@@ -42,3 +42,20 @@ func (o *ec2Orchestrator) createImage(ctx context.Context, req *Ec2ImageCreateRe
 
 	return imageId, nil
 }
+
+func (o *ec2Orchestrator) deleteImage(ctx context.Context, id string) error {
+
+	log.Debugf("got request to delete image %s", id)
+
+	input := &ec2.DeregisterImageInput{
+		ImageId: aws.String(id),
+	}
+	
+	Snapshotinput := &ec2
+
+	if err := o.ec2Client.DeleteImage(ctx, input); err != nil {
+		return err
+	}
+
+	return nil
+}
