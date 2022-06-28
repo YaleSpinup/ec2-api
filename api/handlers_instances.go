@@ -593,3 +593,36 @@ func (s *server) VolumeDetachHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	handleResponseOk(w, out)
 }
+
+func (s *server) InstanceProfileDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	id := vars["id"]
+
+	policy, err := generatePolicy([]string{"ec2:DeleteSnapshot"})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+		},
+	})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	err = orch.deleteSnapshot(r.Context(), id)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponseOk(w, nil)
+}
