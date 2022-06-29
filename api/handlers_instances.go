@@ -542,7 +542,11 @@ func (s *server) InstanceUpdateHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else if len(req.InstanceType) > 0 {
-		if err := orch.ec2Client.UpdateAttributes(r.Context(), req.InstanceType["value"], instanceId); err != nil {
+		if _, ok := req.InstanceType["value"]; !ok {
+			handleError(w, apierror.New(apierror.ErrBadRequest, "missing instance_type value", nil))
+			return
+		}
+		if err := orch.updateInstanceType(r.Context(), req.InstanceType["value"], instanceId); err != nil {
 			handleError(w, err)
 			return
 		}
@@ -591,5 +595,50 @@ func (s *server) VolumeDetachHandler(w http.ResponseWriter, r *http.Request) {
 		handleError(w, err)
 		return
 	}
+	handleResponseOk(w, out)
+}
+
+func (s *server) VolumeAttachHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	id := vars["id"]
+
+	req := &Ec2VolumeAttachmentRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		msg := fmt.Sprintf("cannot decode body into attach volume input: %s", err)
+		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
+		return
+	}
+
+	if req.Device == nil || req.VolumeID == nil || req.DeleteOnTermination == nil {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "missing required fields: device, volume_id and delete_on_termination", nil))
+		return
+	}
+
+	policy, err := generatePolicy([]string{"ec2:AttachVolume", "ec2:ModifyInstanceAttribute"})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+		},
+	})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	out, err := orch.attachVolume(r.Context(), req, id)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
 	handleResponseOk(w, out)
 }
