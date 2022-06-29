@@ -766,13 +766,3 @@ type Ec2VolumeUpdateRequest struct {
 	Iops *int64             `json:"iops"`
 	Tags *map[string]string `json:"tags,omitempty"`
 }
-
-// type DeleteSnapshotOutputConfig struct {
-// 	SnapId string
-// }
-
-// func DeleteSnapshotOutputConfig(rawOut *ec2.DeleteSnapshotOutput) *ec2.DeleteSnapshotOutput {
-// 	return &DeleteSnapshotOutputConfig{
-// 		SnapId: aws.StringValue(),
-// 	}
-// }
