@@ -285,14 +285,14 @@ func TestEc2_DetachVolume(t *testing.T) {
 		name    string
 		args    args
 		fields  fields
-		want    *string
+		want    string
 		wantErr bool
 	}{
 		{
 			name:    "success case",
 			args:    args{ctx: context.TODO(), input: &ec2.DetachVolumeInput{InstanceId: aws.String("v-123"), Force: aws.Bool(true), VolumeId: aws.String("id-123")}},
 			fields:  fields{Service: newmockEC2Client(t, nil)},
-			want:    aws.String("Volume-123"),
+			want:    "Volume-123",
 			wantErr: false,
 		},
 		{

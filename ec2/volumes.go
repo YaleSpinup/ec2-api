@@ -207,24 +207,24 @@ func (e *Ec2) ModifyVolume(ctx context.Context, input *ec2.ModifyVolumeInput) (*
 	return out.VolumeModification, nil
 }
 
-func (e *Ec2) DetachVolume(ctx context.Context, input *ec2.DetachVolumeInput) (*string, error) {
+func (e *Ec2) DetachVolume(ctx context.Context, input *ec2.DetachVolumeInput) (string, error) {
 	if input == nil {
-		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+		return "", apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
 	log.Infof("detaching volumes %v, force = %t", input.VolumeId, aws.BoolValue(input.Force))
 
 	out, err := e.Service.DetachVolumeWithContext(ctx, input)
 	if err != nil {
-		return nil, apierror.New(apierror.ErrInternalError, "failed to detach volume", err)
+		return "", apierror.New(apierror.ErrInternalError, "failed to detach volume", err)
 	}
 
 	log.Debugf("got output to detach volume: %+v", out)
 
 	if out == nil {
-		return nil, apierror.New(apierror.ErrInternalError, "Unexpected detach volume output", nil)
+		return "", apierror.New(apierror.ErrInternalError, "Unexpected detach volume output", nil)
 	}
 
-	return out.VolumeId, nil
+	return aws.StringValue(out.VolumeId), nil
 }
 
 func (e *Ec2) AttachVolume(ctx context.Context, input *ec2.AttachVolumeInput) (string, error) {

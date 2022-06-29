@@ -186,7 +186,7 @@ func (o *ec2Orchestrator) detachVolume(ctx context.Context, instanceId, volumeId
 		return "", err
 	}
 
-	return aws.StringValue(out), nil
+	return out, nil
 }
 
 func (o *ec2Orchestrator) updateInstanceTags(ctx context.Context, rawTags map[string]string, ids ...string) error {
