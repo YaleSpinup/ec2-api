@@ -132,6 +132,63 @@ func (o *ssmOrchestrator) sendInstancesCommand(ctx context.Context, req *SsmComm
 	}
 	return aws.StringValue(cmd.CommandId), nil
 }
+
+func (o *ec2Orchestrator) attachVolume(ctx context.Context, req *Ec2VolumeAttachmentRequest, id string) (string, error) {
+	if req == nil || id == "" {
+		return "", apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+	log.Debugf("got request to attach volume to instance %s: %s", id, awsutil.Prettify(req))
+
+	input := &ec2.AttachVolumeInput{
+		Device:     req.Device,
+		InstanceId: aws.String(id),
+		VolumeId:   req.VolumeID,
+	}
+	attributeInput := &ec2.ModifyInstanceAttributeInput{
+		InstanceId: aws.String(id),
+		Attribute:  aws.String("blockDeviceMapping"),
+		BlockDeviceMappings: []*ec2.InstanceBlockDeviceMappingSpecification{{
+			DeviceName: req.Device,
+			Ebs: &ec2.EbsInstanceBlockDeviceSpecification{
+				DeleteOnTermination: req.DeleteOnTermination,
+				VolumeId:            req.VolumeID,
+			},
+		},
+		},
+	}
+
+	out, err := o.ec2Client.AttachVolume(ctx, input)
+	if err != nil {
+		return "", err
+	}
+	if err := o.ec2Client.UpdateAttributes(ctx, attributeInput); err != nil {
+		return "", common.ErrCode("failed to update instance type attributes", err)
+	}
+
+	return out, nil
+}
+
+func (o *ec2Orchestrator) detachVolume(ctx context.Context, instanceId, volumeId string, force bool) (string, error) {
+	if instanceId == "" || volumeId == "" {
+		return "", apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	log.Debugf("got request to detach volume: %s from instance %s", volumeId, instanceId)
+
+	input := &ec2.DetachVolumeInput{
+		InstanceId: aws.String(instanceId),
+		VolumeId:   aws.String(volumeId),
+		Force:      aws.Bool(force),
+	}
+
+	out, err := o.ec2Client.DetachVolume(ctx, input)
+	if err != nil {
+		return "", err
+	}
+
+	return out, nil
+}
+
 func (o *ec2Orchestrator) updateInstanceTags(ctx context.Context, rawTags map[string]string, ids ...string) error {
 	if len(ids) == 0 || len(rawTags) == 0 {
 		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
@@ -164,5 +221,22 @@ func (o *ec2Orchestrator) updateInstanceTags(ctx context.Context, rawTags map[st
 		return err
 	}
 
+	return nil
+}
+
+func (o *ec2Orchestrator) updateInstanceType(ctx context.Context, instanceType string, instanceId string) error {
+	if instanceType == "" || instanceId == "" {
+		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	input := ec2.ModifyInstanceAttributeInput{
+		InstanceType: &ec2.AttributeValue{Value: aws.String(instanceType)},
+		InstanceId:   aws.String(instanceId),
+	}
+
+	err := o.ec2Client.UpdateAttributes(ctx, &input)
+	if err != nil {
+		return common.ErrCode("failed to update instance type attributes", err)
+	}
 	return nil
 }
