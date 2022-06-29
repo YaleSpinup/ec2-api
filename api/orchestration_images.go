@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/YaleSpinup/apierror"
 	"github.com/aws/aws-sdk-go/aws"
@@ -50,12 +51,27 @@ func (o *ec2Orchestrator) deleteImage(ctx context.Context, id string) error {
 	input := &ec2.DeregisterImageInput{
 		ImageId: aws.String(id),
 	}
-	
-	Snapshotinput := &ec2
-
 	if err := o.ec2Client.DeleteImage(ctx, input); err != nil {
 		return err
 	}
 
+	Snapshotinput := &ec2.DescribeSnapshotsInput{
+		Filters: []*ec2.Filter{{Name: aws.String("description"), Values: aws.StringSlice([]string{fmt.Sprintf("*for %s from vol*", id)})}},
+	}
+
+	out, err := o.ec2Client.DescribeSnapshots(ctx, Snapshotinput)
+	if err != nil {
+		return err
+	}
+	for _, s := range out {
+		input := &ec2.DeleteSnapshotInput{
+			SnapshotId: (s.SnapshotId),
+		}
+		if err := o.ec2Client.DeleteSnapshot(ctx, input); err != nil {
+			return err
+			//TODO: need to review the return error condition in the loop
+		}
+
+	}
 	return nil
 }
