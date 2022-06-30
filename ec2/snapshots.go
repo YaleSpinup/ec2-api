@@ -88,3 +88,17 @@ func (e *Ec2) CreateSnapshot(ctx context.Context, input *ec2.CreateSnapshotInput
 
 	return aws.StringValue(out.SnapshotId), nil
 }
+
+func (e *Ec2) DeleteSnapshot(ctx context.Context, input *ec2.DeleteSnapshotInput) error {
+	if input == nil {
+		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+
+	log.Infof("deleting snapshot %s", *input.SnapshotId)
+
+	_, err := e.Service.DeleteSnapshotWithContext(ctx, input)
+	if err != nil {
+		return common.ErrCode("failed to delete snapshot", err)
+	}
+	return nil
+}
