@@ -288,23 +288,3 @@ func (e *Ec2) RebootInstance(ctx context.Context, ids ...string) error {
 	}
 	return nil
 }
-
-func (e *Ec2) DetachVolume(ctx context.Context, input *ec2.DetachVolumeInput) (*string, error) {
-	if input == nil {
-		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
-	}
-	log.Infof("detaching volumes %v, force = %t", input.VolumeId, aws.BoolValue(input.Force))
-
-	out, err := e.Service.DetachVolumeWithContext(ctx, input)
-	if err != nil {
-		return nil, apierror.New(apierror.ErrInternalError, "failed to detach volume", err)
-	}
-
-	log.Debugf("got output to detach volume: %+v", out)
-
-	if out == nil {
-		return nil, apierror.New(apierror.ErrInternalError, "Unexpected detach volume output", nil)
-	}
-
-	return out.VolumeId, nil
-}
