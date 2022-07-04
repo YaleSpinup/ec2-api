@@ -67,7 +67,6 @@ func (e *Ec2) DescribeSnapshots(ctx context.Context, input *ec2.DescribeSnapshot
 	}
 
 	return out.Snapshots, nil
-
 }
 
 func (e *Ec2) GetSnapshot(ctx context.Context, ids ...string) ([]*ec2.Snapshot, error) {

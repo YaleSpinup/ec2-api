@@ -31,7 +31,7 @@ func (m mockEC2Client) DescribeSnapshotsWithContext(aws.Context, *ec2.DescribeSn
 	if m.err != nil {
 		return nil, m.err
 	}
-	return &ec2.DescribeSnapshotsOutput{Snapshots: []aws.StringSlice{"snap-123", "snap-256"}}, nil
+	return &ec2.DescribeSnapshotsOutput{Snapshots: []*ec2.Snapshot{{SnapshotId: aws.String("snap-123")}, {SnapshotId: aws.String("snap-456")}}}, nil
 }
 
 func TestEc2_CreateSnapshot(t *testing.T) {
@@ -154,7 +154,7 @@ func TestEc2_DescribeSnapshots(t *testing.T) {
 			name:    "success case",
 			args:    args{ctx: context.TODO(), input: &ec2.DescribeSnapshotsInput{Filters: []*ec2.Filter{{Name: aws.String("description"), Values: aws.StringSlice([]string{fmt.Sprintf("*for %s from vol*", "i-123")})}}}},
 			fields:  fields{Service: newmockEC2Client(t, nil)},
-			want:    "Volume-123",
+			want:    []*ec2.Snapshot{{SnapshotId: aws.String("snap-123")}, {SnapshotId: aws.String("snap-456")}},
 			wantErr: false,
 		},
 		{

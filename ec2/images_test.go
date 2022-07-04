@@ -628,7 +628,7 @@ func TestEc2_CreateImage(t *testing.T) {
 	}
 }
 
-func TestEc2_DeleteImage(t *testing.T) {
+func TestEc2_DeregisterImage(t *testing.T) {
 	type fields struct {
 		Service ec2iface.EC2API
 	}
@@ -667,9 +667,9 @@ func TestEc2_DeleteImage(t *testing.T) {
 			e := &Ec2{
 				Service: tt.fields.Service,
 			}
-			err := e.DeleteImage(tt.args.ctx, tt.args.input)
+			err := e.DeregisterImage(tt.args.ctx, tt.args.input)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Ec2.DeleteImage() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Ec2.DeregisterImage() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 		})
