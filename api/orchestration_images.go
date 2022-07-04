@@ -51,7 +51,7 @@ func (o *ec2Orchestrator) deleteImage(ctx context.Context, id string) error {
 	input := &ec2.DeregisterImageInput{
 		ImageId: aws.String(id),
 	}
-	if err := o.ec2Client.DeleteImage(ctx, input); err != nil {
+	if err := o.ec2Client.DeregisterImage(ctx, input); err != nil {
 		return err
 	}
 
