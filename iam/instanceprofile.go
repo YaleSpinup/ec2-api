@@ -3,17 +3,29 @@ package iam
 import (
 	"context"
 
+	"github.com/YaleSpinup/apierror"
+	"github.com/YaleSpinup/ec2-api/common"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/iam"
+	log "github.com/sirupsen/logrus"
 )
 
+func (i *Iam) GetInstanceProfile(ctx context.Context, inp *iam.GetInstanceProfileInput) ([]*Role, error) {
+	if inp == nil {
+		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+	log.Infof("getting instanceprofiles %s", aws.StringValue(inp.InstanceProfileName))
 
-func (i *Iam) GetInstanceProfile(ctx context.Context, name string) (?????, error) {
-	inp := iam.GetInstanceProfileInput{
-		InstanceProfileName: aws.String(name),
+	out, err := i.Service.GetInstanceProfileWithContext(ctx, inp)
+	if err != nil {
+		return nil, common.ErrCode("failed to get instanceprofiles", err)
 	}
 
-	out, err:= i.Service.GetInstanceProfile(&inp)
-	// TODO: continue from here
+	log.Debugf("got output instanceprofiles: %+v", out)
 
+	if out == nil {
+		return nil, apierror.New(apierror.ErrInternalError, "Unexpected get instanceprofiles", nil)
+	}
+
+	return out.InstanceProfile.Roles, nil
 }

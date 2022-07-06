@@ -642,3 +642,36 @@ func (s *server) VolumeAttachHandler(w http.ResponseWriter, r *http.Request) {
 
 	handleResponseOk(w, out)
 }
+
+func (s *server) InstanceProfileDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	name := vars["name"]
+
+	policy, err := generatePolicy([]string{"iam:GetInstanceProfile"})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	orch, err := s.newIAMOrchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+		},
+	})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	_, err = orch.getInstanceProfile(r.Context(), name)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponseOk(w, nil)
+}
