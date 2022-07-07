@@ -649,7 +649,7 @@ func (s *server) InstanceProfileDeleteHandler(w http.ResponseWriter, r *http.Req
 	account := s.mapAccountNumber(vars["account"])
 	name := vars["name"]
 
-	policy, err := generatePolicy([]string{"iam:GetInstanceProfile", })
+	policy, err := generatePolicy([]string{"iam:GetInstanceProfile", "iam:ListAttachedRolePolicies", "iam:DetachRolePolicy", "iam:ListRolePolicies", "iam:DeleteRolePolicy", "iam:RemoveRoleFromInstanceProfile", "iam:DeleteRole", "iam:DeleteInstanceProfile"})
 	if err != nil {
 		handleError(w, err)
 		return

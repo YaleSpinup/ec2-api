@@ -102,7 +102,7 @@ func (i *Iam) DeleteRolePolicy(ctx context.Context, roleName, policyName string)
 		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
 	input := &iam.DeleteRolePolicyInput{
-		RoleName:  aws.String(roleName),
+		RoleName:   aws.String(roleName),
 		PolicyName: aws.String(policyName),
 	}
 	log.Infof("deleting attached roles for %s, %s", roleName, policyName)
@@ -116,11 +116,11 @@ func (i *Iam) DeleteRolePolicy(ctx context.Context, roleName, policyName string)
 }
 
 func (i *Iam) RemoveRoleFromInstanceProfile(ctx context.Context, roleName, instanceProfileName string) error {
-	if roleName == "" || instanceProfileName  == "" {
+	if roleName == "" || instanceProfileName == "" {
 		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
 	input := &iam.RemoveRoleFromInstanceProfileInput{
-		RoleName:  aws.String(roleName),
+		RoleName:            aws.String(roleName),
 		InstanceProfileName: aws.String(instanceProfileName),
 	}
 	log.Infof("deleting attached roles for %s, %s", roleName, instanceProfileName)
@@ -138,7 +138,7 @@ func (i *Iam) DeleteRole(ctx context.Context, roleName string) error {
 		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
 	input := &iam.DeleteRoleInput{
-		RoleName:  aws.String(roleName),
+		RoleName: aws.String(roleName),
 	}
 	log.Infof("deleting attached roles for %s", roleName)
 
