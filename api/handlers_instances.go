@@ -667,7 +667,7 @@ func (s *server) InstanceProfileDeleteHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	err = orch.getInstanceProfile(r.Context(), name)
+	err = orch.deleteInstanceProfile(r.Context(), name)
 	if err != nil {
 		handleError(w, err)
 		return
