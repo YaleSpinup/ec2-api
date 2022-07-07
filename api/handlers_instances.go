@@ -649,7 +649,7 @@ func (s *server) InstanceProfileDeleteHandler(w http.ResponseWriter, r *http.Req
 	account := s.mapAccountNumber(vars["account"])
 	name := vars["name"]
 
-	policy, err := generatePolicy([]string{"iam:GetInstanceProfile"})
+	policy, err := generatePolicy([]string{"iam:GetInstanceProfile", })
 	if err != nil {
 		handleError(w, err)
 		return
@@ -667,7 +667,7 @@ func (s *server) InstanceProfileDeleteHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	_, err = orch.getInstanceProfile(r.Context(), name)
+	err = orch.getInstanceProfile(r.Context(), name)
 	if err != nil {
 		handleError(w, err)
 		return
