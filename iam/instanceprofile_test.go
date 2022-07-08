@@ -85,6 +85,13 @@ func TestIam_GetInstanceProfile(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			name:    "success case",
+			args:    args{ctx: context.TODO(), input: &iam.GetInstanceProfileInput{InstanceProfileName: aws.String("profile-456")}},
+			fields:  fields{Service: newmockIAMClient(t, nil)},
+			want:    &iam.InstanceProfile{Roles: []*iam.Role{{RoleName: aws.String("role123")}}},
+			wantErr: false,
+		},
+		{
 			name:    "nil input",
 			args:    args{ctx: context.TODO(), input: nil},
 			fields:  fields{Service: newmockIAMClient(t, nil)},
@@ -95,13 +102,6 @@ func TestIam_GetInstanceProfile(t *testing.T) {
 			args:    args{ctx: context.TODO(), input: &iam.GetInstanceProfileInput{InstanceProfileName: aws.String("profile-456")}},
 			fields:  fields{Service: newmockIAMClient(t, awserr.New("Bad Request", "boom.", nil))},
 			wantErr: true,
-		},
-		{
-			name:    "success case",
-			args:    args{ctx: context.TODO(), input: &iam.GetInstanceProfileInput{InstanceProfileName: aws.String("profile-456")}},
-			fields:  fields{Service: newmockIAMClient(t, nil)},
-			want:    &iam.InstanceProfile{Roles: []*iam.Role{{RoleName: aws.String("role123")}}},
-			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
@@ -138,17 +138,17 @@ func TestIam_ListAttachedRolePolicies(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "nil input",
-			args:    args{ctx: context.TODO(), input: nil},
-			fields:  fields{Service: newmockIAMClient(t, nil)},
-			wantErr: true,
-		},
-		{
 			name:    "success case",
 			args:    args{ctx: context.TODO(), input: &iam.ListAttachedRolePoliciesInput{RoleName: aws.String("role-123")}},
 			fields:  fields{Service: newmockIAMClient(t, nil)},
 			want:    []*iam.AttachedPolicy{{PolicyArn: aws.String("arn123")}},
 			wantErr: false,
+		},
+		{
+			name:    "nil input",
+			args:    args{ctx: context.TODO(), input: nil},
+			fields:  fields{Service: newmockIAMClient(t, nil)},
+			wantErr: true,
 		},
 		{
 			name:    "aws error",
@@ -190,12 +190,6 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "nil input",
-			args:    args{ctx: context.TODO(), input: nil},
-			fields:  fields{Service: newmockIAMClient(t, nil)},
-			wantErr: true,
-		},
-		{
 			name: "success case",
 			args: args{ctx: context.TODO(), input: &iam.DetachRolePolicyInput{
 				RoleName:  aws.String("role-123"),
@@ -203,6 +197,12 @@ func TestIam_DetachRolePolicy(t *testing.T) {
 			}},
 			fields:  fields{Service: newmockIAMClient(t, nil)},
 			wantErr: false,
+		},
+		{
+			name:    "nil input",
+			args:    args{ctx: context.TODO(), input: nil},
+			fields:  fields{Service: newmockIAMClient(t, nil)},
+			wantErr: true,
 		},
 		{
 			name: "aws error",
@@ -243,17 +243,17 @@ func TestIam_ListRolePolicies(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "nil input",
-			args:    args{ctx: context.TODO(), input: nil},
-			fields:  fields{Service: newmockIAMClient(t, nil)},
-			wantErr: true,
-		},
-		{
 			name:    "success case",
 			args:    args{ctx: context.TODO(), input: &iam.ListRolePoliciesInput{RoleName: aws.String("role-657")}},
 			fields:  fields{Service: newmockIAMClient(t, nil)},
 			want:    aws.StringSlice([]string{"abcd-1"}),
 			wantErr: false,
+		},
+		{
+			name:    "nil input",
+			args:    args{ctx: context.TODO(), input: nil},
+			fields:  fields{Service: newmockIAMClient(t, nil)},
+			wantErr: true,
 		},
 		{
 			name:    "aws error",
@@ -295,12 +295,6 @@ func TestIam_DeleteRolePolicy(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "nil input",
-			args:    args{ctx: context.TODO(), input: nil},
-			fields:  fields{Service: newmockIAMClient(t, nil)},
-			wantErr: true,
-		},
-		{
 			name: "success case",
 			args: args{ctx: context.TODO(), input: &iam.DeleteRolePolicyInput{
 				RoleName:   aws.String("role-123"),
@@ -308,6 +302,12 @@ func TestIam_DeleteRolePolicy(t *testing.T) {
 			}},
 			fields:  fields{Service: newmockIAMClient(t, nil)},
 			wantErr: false,
+		},
+		{
+			name:    "nil input",
+			args:    args{ctx: context.TODO(), input: nil},
+			fields:  fields{Service: newmockIAMClient(t, nil)},
+			wantErr: true,
 		},
 		{
 			name: "aws error",
@@ -347,18 +347,18 @@ func TestIam_RemoveRoleFromInstanceProfile(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "nil input",
-			args:    args{ctx: context.TODO(), input: nil},
-			fields:  fields{Service: newmockIAMClient(t, nil)},
-			wantErr: true,
-		},
-		{
 			name: "success case",
 			args: args{ctx: context.TODO(), input: &iam.RemoveRoleFromInstanceProfileInput{
 				RoleName:            aws.String("role-123"),
 				InstanceProfileName: aws.String("profile-256")}},
 			fields:  fields{Service: newmockIAMClient(t, nil)},
 			wantErr: false,
+		},
+		{
+			name:    "nil input",
+			args:    args{ctx: context.TODO(), input: nil},
+			fields:  fields{Service: newmockIAMClient(t, nil)},
+			wantErr: true,
 		},
 		{
 			name: "aws error",
@@ -397,16 +397,16 @@ func TestIam_DeleteRole(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "nil input",
-			args:    args{ctx: context.TODO(), input: nil},
-			fields:  fields{Service: newmockIAMClient(t, nil)},
-			wantErr: true,
-		},
-		{
 			name:    "success case",
 			args:    args{ctx: context.TODO(), input: &iam.DeleteRoleInput{RoleName: aws.String("role-123")}},
 			fields:  fields{Service: newmockIAMClient(t, nil)},
 			wantErr: false,
+		},
+		{
+			name:    "nil input",
+			args:    args{ctx: context.TODO(), input: nil},
+			fields:  fields{Service: newmockIAMClient(t, nil)},
+			wantErr: true,
 		},
 		{
 			name:    "aws error",
@@ -443,16 +443,16 @@ func TestIam_DeleteInstanceProfile(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "nil input",
-			args:    args{ctx: context.TODO(), input: nil},
-			fields:  fields{Service: newmockIAMClient(t, nil)},
-			wantErr: true,
-		},
-		{
 			name:    "success case",
 			args:    args{ctx: context.TODO(), input: &iam.DeleteInstanceProfileInput{InstanceProfileName: aws.String("profilename-123")}},
 			fields:  fields{Service: newmockIAMClient(t, nil)},
 			wantErr: false,
+		},
+		{
+			name:    "nil input",
+			args:    args{ctx: context.TODO(), input: nil},
+			fields:  fields{Service: newmockIAMClient(t, nil)},
+			wantErr: true,
 		},
 		{
 			name:    "aws error",
