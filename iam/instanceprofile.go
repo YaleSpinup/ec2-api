@@ -20,7 +20,6 @@ func (i *Iam) GetInstanceProfile(ctx context.Context, input *iam.GetInstanceProf
 	if err != nil {
 		return nil, common.ErrCode("failed to get instanceprofiles", err)
 	}
-
 	log.Debugf("got output instanceprofiles: %+v", out)
 
 	if out == nil {
@@ -40,7 +39,6 @@ func (i *Iam) ListAttachedRolePolicies(ctx context.Context, input *iam.ListAttac
 	if err != nil {
 		return nil, common.ErrCode("failed to list attached role policies", err)
 	}
-
 	log.Debugf("got output attached role policies: %+v", out)
 
 	if out == nil {
@@ -74,7 +72,6 @@ func (i *Iam) ListRolePolicies(ctx context.Context, input *iam.ListRolePoliciesI
 	if err != nil {
 		return nil, common.ErrCode("failed to list role policies", err)
 	}
-
 	log.Debugf("got output list of role policies: %+v", out)
 
 	if out == nil {

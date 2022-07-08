@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/iam"
 )
+
 // deleteInstanceProfile deletes the specified instance profile and associated role, if they exist
 // any policies attached to the role will be detached and left intact
 func (o *iamOrchestrator) deleteInstanceProfile(ctx context.Context, name string) error {
