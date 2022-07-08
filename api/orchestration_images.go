@@ -68,10 +68,8 @@ func (o *ec2Orchestrator) deleteImage(ctx context.Context, id string) error {
 			SnapshotId: (s.SnapshotId),
 		}
 		if err := o.ec2Client.DeleteSnapshot(ctx, input); err != nil {
-			return err
-			//TODO: need to review the return error condition in the loop
+			log.Warnf("failed to delete snapshot %s: %v", aws.StringValue(s.SnapshotId), err)
 		}
-
 	}
 	return nil
 }
