@@ -10,16 +10,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (i *Iam) GetInstanceProfile(ctx context.Context, name string) (*iam.InstanceProfile, error) {
-	if name == "" {
+func (i *Iam) GetInstanceProfile(ctx context.Context, input *iam.GetInstanceProfileInput) (*iam.InstanceProfile, error) {
+	if input == nil {
 		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
-	inp := &iam.GetInstanceProfileInput{
-		InstanceProfileName: aws.String(name),
-	}
-	log.Infof("getting instanceprofiles %s", aws.StringValue(inp.InstanceProfileName))
+	log.Infof("getting instanceprofiles %s", aws.StringValue(input.InstanceProfileName))
 
-	out, err := i.Service.GetInstanceProfileWithContext(ctx, inp)
+	out, err := i.Service.GetInstanceProfileWithContext(ctx, input)
 	if err != nil {
 		return nil, common.ErrCode("failed to get instanceprofiles", err)
 	}
@@ -33,14 +30,11 @@ func (i *Iam) GetInstanceProfile(ctx context.Context, name string) (*iam.Instanc
 	return out.InstanceProfile, nil
 }
 
-func (i *Iam) ListAttachedRolePolicies(ctx context.Context, roleName string) ([]*iam.AttachedPolicy, error) {
-	if roleName == "" {
+func (i *Iam) ListAttachedRolePolicies(ctx context.Context, input *iam.ListAttachedRolePoliciesInput) ([]*iam.AttachedPolicy, error) {
+	if input == nil {
 		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
-	input := &iam.ListAttachedRolePoliciesInput{
-		RoleName: aws.String(roleName),
-	}
-	log.Infof("list attached role policies  %s", roleName)
+	log.Infof("list attached role policies  %s", aws.StringValue(input.RoleName))
 
 	out, err := i.Service.ListAttachedRolePoliciesWithContext(ctx, input)
 	if err != nil {
@@ -56,15 +50,11 @@ func (i *Iam) ListAttachedRolePolicies(ctx context.Context, roleName string) ([]
 	return out.AttachedPolicies, nil
 }
 
-func (i *Iam) DetachRolePolicy(ctx context.Context, roleName, policyArn string) error {
-	if roleName == "" || policyArn == "" {
+func (i *Iam) DetachRolePolicy(ctx context.Context, input *iam.DetachRolePolicyInput) error {
+	if input == nil {
 		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
-	input := &iam.DetachRolePolicyInput{
-		RoleName:  aws.String(roleName),
-		PolicyArn: aws.String(policyArn),
-	}
-	log.Infof("detaching role policy for %s, %s", roleName, policyArn)
+	log.Infof("detaching role policy for %s, %s", aws.StringValue(input.RoleName), aws.StringValue(input.PolicyArn))
 
 	_, err := i.Service.DetachRolePolicyWithContext(ctx, input)
 	if err != nil {
@@ -74,14 +64,11 @@ func (i *Iam) DetachRolePolicy(ctx context.Context, roleName, policyArn string) 
 	return nil
 }
 
-func (i *Iam) ListRolePolicies(ctx context.Context, roleName string) ([]*string, error) {
-	if roleName == "" {
+func (i *Iam) ListRolePolicies(ctx context.Context, input *iam.ListRolePoliciesInput) ([]*string, error) {
+	if input == nil {
 		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
-	input := &iam.ListRolePoliciesInput{
-		RoleName: aws.String(roleName),
-	}
-	log.Infof("listing role policies for %s", roleName)
+	log.Infof("listing role policies for %s", *input.RoleName)
 
 	out, err := i.Service.ListRolePoliciesWithContext(ctx, input)
 	if err != nil {
@@ -97,15 +84,11 @@ func (i *Iam) ListRolePolicies(ctx context.Context, roleName string) ([]*string,
 	return out.PolicyNames, nil
 }
 
-func (i *Iam) DeleteRolePolicy(ctx context.Context, roleName, policyName string) error {
-	if roleName == "" || policyName == "" {
+func (i *Iam) DeleteRolePolicy(ctx context.Context, input *iam.DeleteRolePolicyInput) error {
+	if input == nil {
 		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
-	input := &iam.DeleteRolePolicyInput{
-		RoleName:   aws.String(roleName),
-		PolicyName: aws.String(policyName),
-	}
-	log.Infof("deleting role policy for %s, %s", roleName, policyName)
+	log.Infof("deleting role policy for %s, %s", aws.StringValue(input.RoleName), aws.StringValue(input.PolicyName))
 
 	_, err := i.Service.DeleteRolePolicyWithContext(ctx, input)
 	if err != nil {
@@ -115,15 +98,11 @@ func (i *Iam) DeleteRolePolicy(ctx context.Context, roleName, policyName string)
 	return nil
 }
 
-func (i *Iam) RemoveRoleFromInstanceProfile(ctx context.Context, roleName, instanceProfileName string) error {
-	if roleName == "" || instanceProfileName == "" {
+func (i *Iam) RemoveRoleFromInstanceProfile(ctx context.Context, input *iam.RemoveRoleFromInstanceProfileInput) error {
+	if input == nil {
 		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
-	input := &iam.RemoveRoleFromInstanceProfileInput{
-		RoleName:            aws.String(roleName),
-		InstanceProfileName: aws.String(instanceProfileName),
-	}
-	log.Infof("removing role from instanceprofile %s, %s", roleName, instanceProfileName)
+	log.Infof("removing role from instanceprofile %s, %s", aws.StringValue(input.RoleName), aws.StringValue(input.InstanceProfileName))
 
 	_, err := i.Service.RemoveRoleFromInstanceProfileWithContext(ctx, input)
 	if err != nil {
@@ -133,14 +112,11 @@ func (i *Iam) RemoveRoleFromInstanceProfile(ctx context.Context, roleName, insta
 	return nil
 }
 
-func (i *Iam) DeleteRole(ctx context.Context, roleName string) error {
-	if roleName == "" {
+func (i *Iam) DeleteRole(ctx context.Context, input *iam.DeleteRoleInput) error {
+	if input == nil {
 		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
-	input := &iam.DeleteRoleInput{
-		RoleName: aws.String(roleName),
-	}
-	log.Infof("deleting role for %s", roleName)
+	log.Infof("deleting role for %s", aws.StringValue(input.RoleName))
 
 	_, err := i.Service.DeleteRoleWithContext(ctx, input)
 	if err != nil {
@@ -150,14 +126,11 @@ func (i *Iam) DeleteRole(ctx context.Context, roleName string) error {
 	return nil
 }
 
-func (i *Iam) DeleteInstanceProfile(ctx context.Context, instanceProfileName string) error {
-	if instanceProfileName == "" {
+func (i *Iam) DeleteInstanceProfile(ctx context.Context, input *iam.DeleteInstanceProfileInput) error {
+	if input == nil {
 		return apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
-	input := &iam.DeleteInstanceProfileInput{
-		InstanceProfileName: aws.String(instanceProfileName),
-	}
-	log.Infof("deleting instanceprofile for %s", instanceProfileName)
+	log.Infof("deleting instanceprofile for %s", aws.StringValue(input.InstanceProfileName))
 
 	_, err := i.Service.DeleteInstanceProfileWithContext(ctx, input)
 	if err != nil {
