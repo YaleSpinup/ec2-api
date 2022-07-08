@@ -5,55 +5,56 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/iam/iamiface"
 )
 
-func (m *mockIAMClient) GetInstanceProfileWithContext(ctx context.Context, name string) (*iam.GetInstanceProfileOutput, error) {
+func (m *mockIAMClient) GetInstanceProfileWithContext(ctx context.Context, input *iam.GetInstanceProfileInput, opt ...request.Option) (*iam.GetInstanceProfileOutput, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
-	return &iam.GetInstanceProfileOutput{}, nil
+	return &iam.GetInstanceProfileOutput{InstanceProfile: &iam.InstanceProfile{Roles: []*iam.Role{{RoleName: aws.String("role123")}}}}, nil
 }
 
-func (m *mockIAMClient) ListAttachedRolePoliciesWithContext(ctx context.Context, roleName string) (*iam.ListAttachedRolePoliciesOutput, error) {
+func (m *mockIAMClient) ListAttachedRolePoliciesWithContext(ctx context.Context, input *iam.ListAttachedRolePoliciesInput, opt ...request.Option) (*iam.ListAttachedRolePoliciesOutput, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
-	return &iam.ListAttachedRolePoliciesOutput{}, nil
+	return &iam.ListAttachedRolePoliciesOutput{AttachedPolicies: []*iam.AttachedPolicy{{PolicyArn: aws.String("arn123")}}}, nil
 }
 
-func (m *mockIAMClient) DetachRolePolicyWithContext(ctx context.Context, roleName, policyArn string) (*iam.DetachRolePolicyOutput, error) {
+func (m *mockIAMClient) DetachRolePolicyWithContext(ctx context.Context, input *iam.DetachRolePolicyInput, opt ...request.Option) (*iam.DetachRolePolicyOutput, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
 	return &iam.DetachRolePolicyOutput{}, nil
 }
 
-func (m *mockIAMClient) ListRolePoliciesWithContext(ctx context.Context, roleName string) (*iam.ListRolePoliciesOutput, error) {
+func (m *mockIAMClient) ListRolePoliciesWithContext(ctx context.Context, input *iam.ListRolePoliciesInput, opt ...request.Option) (*iam.ListRolePoliciesOutput, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
-	return &iam.ListRolePoliciesOutput{}, nil
+	return &iam.ListRolePoliciesOutput{PolicyNames: aws.StringSlice([]string{"abcd-1"})}, nil
 }
 
-func (m *mockIAMClient) DeleteRolePolicyWithContext(ctx context.Context, roleName, policyName string) (*iam.DeleteRolePolicyOutput, error) {
+func (m *mockIAMClient) DeleteRolePolicyWithContext(ctx context.Context, input *iam.DeleteRolePolicyInput, opt ...request.Option) (*iam.DeleteRolePolicyOutput, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
 	return &iam.DeleteRolePolicyOutput{}, nil
 }
 
-func (m *mockIAMClient) RemoveRoleFromInstanceProfileWithContext(ctx context.Context, roleName, instanceProfileName string) (*iam.RemoveRoleFromInstanceProfileOutput, error) {
+func (m *mockIAMClient) RemoveRoleFromInstanceProfileWithContext(ctx context.Context, input *iam.RemoveRoleFromInstanceProfileInput, opt ...request.Option) (*iam.RemoveRoleFromInstanceProfileOutput, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
 	return &iam.RemoveRoleFromInstanceProfileOutput{}, nil
 }
 
-func (m *mockIAMClient) DeleteRoleWithContext(ctx context.Context, rolenName string) (*iam.DeleteRoleOutput, error) {
+func (m *mockIAMClient) DeleteRoleWithContext(ctx context.Context, input *iam.DeleteRoleInput, opt ...request.Option) (*iam.DeleteRoleOutput, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
