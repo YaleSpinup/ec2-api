@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/iam/iamiface"
 )
@@ -59,7 +60,7 @@ func (m *mockIAMClient) DeleteRoleWithContext(ctx context.Context, rolenName str
 	return &iam.DeleteRoleOutput{}, nil
 }
 
-func (m *mockIAMClient) DeleteInstanceProfileWithContext(ctx context.Context, instanceProfileName string) (*iam.DeleteInstanceProfileOutput, error) {
+func (m *mockIAMClient) DeleteInstanceProfileWithContext(ctx context.Context, input *iam.DeleteInstanceProfileInput, opt ...request.Option) (*iam.DeleteInstanceProfileOutput, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
