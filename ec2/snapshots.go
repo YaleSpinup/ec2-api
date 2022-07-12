@@ -57,9 +57,12 @@ func (e *Ec2) DescribeSnapshots(ctx context.Context, input *ec2.DescribeSnapshot
 	out, err := e.Service.DescribeSnapshotsWithContext(ctx, input)
 	if err != nil {
 		return nil, common.ErrCode("failed to list snapshot", err)
-
 	}
 	log.Debugf("list snapshots output: %+v", out)
+
+	if out == nil {
+		return nil, apierror.New(apierror.ErrBadRequest, "unexpected list snapshot response", nil)
+	}
 
 	return out.Snapshots, nil
 }
