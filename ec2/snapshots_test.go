@@ -147,14 +147,14 @@ func TestEc2_DescribeSnapshots(t *testing.T) {
 		e       *Ec2
 		args    args
 		fields  fields
-		want    []*ec2.Snapshot
+		want    *ec2.DescribeSnapshotsOutput
 		wantErr bool
 	}{
 		{
 			name:    "success case",
 			args:    args{ctx: context.TODO(), input: &ec2.DescribeSnapshotsInput{Filters: []*ec2.Filter{{Name: aws.String("description"), Values: aws.StringSlice([]string{fmt.Sprintf("*for %s from vol*", "i-123")})}}}},
 			fields:  fields{Service: newmockEC2Client(t, nil)},
-			want:    []*ec2.Snapshot{{SnapshotId: aws.String("snap-123")}, {SnapshotId: aws.String("snap-456")}},
+			want:    &ec2.DescribeSnapshotsOutput{Snapshots: []*ec2.Snapshot{{SnapshotId: aws.String("snap-123")}, {SnapshotId: aws.String("snap-456")}}},
 			wantErr: false,
 		},
 		{

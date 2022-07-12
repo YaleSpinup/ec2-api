@@ -63,7 +63,7 @@ func (o *ec2Orchestrator) deleteImage(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	for _, s := range out {
+	for _, s := range out.Snapshots {
 		input := &ec2.DeleteSnapshotInput{
 			SnapshotId: (s.SnapshotId),
 		}
