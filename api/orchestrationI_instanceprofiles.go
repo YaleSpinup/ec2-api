@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/YaleSpinup/ec2-api/common"
 	"github.com/aws/aws-sdk-go/aws"
@@ -15,50 +16,54 @@ func (o *iamOrchestrator) deleteInstanceProfile(ctx context.Context, name string
 	if err != nil {
 		return common.ErrCode("failed to get instance profiles", err)
 	}
+
 	// detach policies from role(s) and delete the role(s)
-	for _, managedRole := range ip.Roles {
-		roleName := aws.StringValue(managedRole.RoleName)
-		// detach all managed policies
-		rps, err := o.iamClient.ListAttachedRolePolicies(ctx, &iam.ListAttachedRolePoliciesInput{RoleName: aws.String(roleName)})
+	for _, r := range ip.Roles {
+		// detach all attached policies
+		rps, err := o.iamClient.ListAttachedRolePolicies(ctx, &iam.ListAttachedRolePoliciesInput{RoleName: r.RoleName})
 		if err != nil {
-			return common.ErrCode("failed to list managed roles", err)
+			return common.ErrCode(fmt.Sprintf("failed to list attached policies for the role %s", aws.StringValue(r.RoleName)), err)
 		}
 		for _, rp := range rps {
 			input := &iam.DetachRolePolicyInput{
-				RoleName:  aws.String(roleName),
+				RoleName:  r.RoleName,
 				PolicyArn: rp.PolicyArn,
 			}
 			if err := o.iamClient.DetachRolePolicy(ctx, input); err != nil {
-				return common.ErrCode("failed to detach managed roles", err)
+				return common.ErrCode(fmt.Sprintf("failed to detach policy for the role %s", aws.StringValue(r.RoleName)), err)
 			}
 		}
+
 		// delete all inline policies
-		pns, err := o.iamClient.ListRolePolicies(ctx, &iam.ListRolePoliciesInput{RoleName: aws.String(roleName)})
+		ps, err := o.iamClient.ListRolePolicies(ctx, &iam.ListRolePoliciesInput{RoleName: r.RoleName})
 		if err != nil {
-			return common.ErrCode("failed to list role policies", err)
+			return common.ErrCode("failed to list inline policies", err)
 		}
-		for _, p := range pns {
+		for _, p := range ps {
 			input := &iam.DeleteRolePolicyInput{
-				RoleName:   aws.String(roleName),
+				RoleName:   r.RoleName,
 				PolicyName: p,
 			}
 			if err := o.iamClient.DeleteRolePolicy(ctx, input); err != nil {
-				return common.ErrCode("failed to delete role policy", err)
+				return common.ErrCode("failed to delete inline policy", err)
 			}
 		}
+
 		// remove the role from the instance profile
 		input := &iam.RemoveRoleFromInstanceProfileInput{
-			RoleName:            aws.String(roleName),
+			RoleName:            r.RoleName,
 			InstanceProfileName: ip.InstanceProfileName,
 		}
 		if err := o.iamClient.RemoveRoleFromInstanceProfile(ctx, input); err != nil {
 			return common.ErrCode("failed to remove role from instance profile", err)
 		}
+
 		// delete the role
-		if err := o.iamClient.DeleteRole(ctx, &iam.DeleteRoleInput{RoleName: aws.String(roleName)}); err != nil {
+		if err := o.iamClient.DeleteRole(ctx, &iam.DeleteRoleInput{RoleName: r.RoleName}); err != nil {
 			return common.ErrCode("failed to delete role", err)
 		}
 	}
+
 	// delete the instance profile
 	if err := o.iamClient.DeleteInstanceProfile(ctx, &iam.DeleteInstanceProfileInput{InstanceProfileName: aws.String(aws.StringValue(ip.InstanceProfileName))}); err != nil {
 		return common.ErrCode("failed to delete instance profile", err)

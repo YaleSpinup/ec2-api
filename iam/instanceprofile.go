@@ -87,8 +87,7 @@ func (i *Iam) DeleteRolePolicy(ctx context.Context, input *iam.DeleteRolePolicyI
 	}
 	log.Infof("deleting role policy for %s, %s", aws.StringValue(input.RoleName), aws.StringValue(input.PolicyName))
 
-	_, err := i.Service.DeleteRolePolicyWithContext(ctx, input)
-	if err != nil {
+	if _, err := i.Service.DeleteRolePolicyWithContext(ctx, input); err != nil {
 		return common.ErrCode("failed to delete role policy", err)
 	}
 
@@ -101,8 +100,7 @@ func (i *Iam) RemoveRoleFromInstanceProfile(ctx context.Context, input *iam.Remo
 	}
 	log.Infof("removing role from instanceprofile %s, %s", aws.StringValue(input.RoleName), aws.StringValue(input.InstanceProfileName))
 
-	_, err := i.Service.RemoveRoleFromInstanceProfileWithContext(ctx, input)
-	if err != nil {
+	if _, err := i.Service.RemoveRoleFromInstanceProfileWithContext(ctx, input); err != nil {
 		return common.ErrCode("failed to remove role from instanceprofile", err)
 	}
 
@@ -115,8 +113,7 @@ func (i *Iam) DeleteRole(ctx context.Context, input *iam.DeleteRoleInput) error 
 	}
 	log.Infof("deleting role for %s", aws.StringValue(input.RoleName))
 
-	_, err := i.Service.DeleteRoleWithContext(ctx, input)
-	if err != nil {
+	if _, err := i.Service.DeleteRoleWithContext(ctx, input); err != nil {
 		return common.ErrCode("failed to delete role", err)
 	}
 
@@ -129,8 +126,7 @@ func (i *Iam) DeleteInstanceProfile(ctx context.Context, input *iam.DeleteInstan
 	}
 	log.Infof("deleting instanceprofile for %s", aws.StringValue(input.InstanceProfileName))
 
-	_, err := i.Service.DeleteInstanceProfileWithContext(ctx, input)
-	if err != nil {
+	if _, err := i.Service.DeleteInstanceProfileWithContext(ctx, input); err != nil {
 		return common.ErrCode("failed to delete instanceprofile", err)
 	}
 
