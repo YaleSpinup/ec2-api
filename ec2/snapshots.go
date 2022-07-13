@@ -28,6 +28,24 @@ func (e *Ec2) ListSnapshots(ctx context.Context, input *ec2.DescribeSnapshotsInp
 	return out, nil
 }
 
+func (e *Ec2) DescribeSnapshots(ctx context.Context, input *ec2.DescribeSnapshotsInput) ([]*ec2.Snapshot, error) {
+	if input == nil {
+		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
+	}
+	log.Infof("list snapshots: %+v", input)
+	out, err := e.Service.DescribeSnapshotsWithContext(ctx, input)
+	if err != nil {
+		return nil, common.ErrCode("failed to list snapshot", err)
+	}
+	log.Debugf("list snapshots output: %+v", out)
+
+	if out == nil {
+		return nil, apierror.New(apierror.ErrBadRequest, "unexpected list snapshot response", nil)
+	}
+
+	return out.Snapshots, nil
+}
+
 func (e *Ec2) GetSnapshot(ctx context.Context, ids ...string) ([]*ec2.Snapshot, error) {
 	if len(ids) == 0 {
 		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)

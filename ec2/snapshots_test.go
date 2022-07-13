@@ -175,7 +175,7 @@ func TestEc2_DescribeSnapshots(t *testing.T) {
 			e := &Ec2{
 				Service: tt.fields.Service,
 			}
-			got, err := e.DescribeSnapshots(tt.args.ctx, tt.args.input)
+			got, err := e.ListSnapshots(tt.args.ctx, tt.args.input)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Ec2.DescribeSnapshots() error = %v, wantErr %v", err, tt.wantErr)
 				return
