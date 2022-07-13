@@ -134,7 +134,7 @@ func TestEc2_DeleteSnapshot(t *testing.T) {
 	}
 }
 
-func TestEc2_DescribeSnapshots(t *testing.T) {
+func TestEc2_ListSnapshots(t *testing.T) {
 	type fields struct {
 		Service ec2iface.EC2API
 	}
@@ -177,11 +177,11 @@ func TestEc2_DescribeSnapshots(t *testing.T) {
 			}
 			got, err := e.ListSnapshots(tt.args.ctx, tt.args.input)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Ec2.DescribeSnapshots() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Ec2.ListSnapshots() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Ec2.DescribeSnapshots() = %v, want %v", got, tt.want)
+				t.Errorf("Ec2.ListSnapshots() = %v, want %v", got, tt.want)
 			}
 		})
 	}
