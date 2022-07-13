@@ -2,6 +2,8 @@ package ec2
 
 import (
 	"context"
+	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -23,6 +25,13 @@ func (m mockEC2Client) DeleteSnapshotWithContext(aws.Context, *ec2.DeleteSnapsho
 		return nil, m.err
 	}
 	return &ec2.DeleteSnapshotOutput{}, nil
+}
+
+func (m mockEC2Client) DescribeSnapshotsWithContext(aws.Context, *ec2.DescribeSnapshotsInput, ...request.Option) (*ec2.DescribeSnapshotsOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return &ec2.DescribeSnapshotsOutput{Snapshots: []*ec2.Snapshot{{SnapshotId: aws.String("snap-123")}, {SnapshotId: aws.String("snap-456")}}}, nil
 }
 
 func TestEc2_CreateSnapshot(t *testing.T) {
@@ -120,6 +129,59 @@ func TestEc2_DeleteSnapshot(t *testing.T) {
 			}
 			if err := e.DeleteSnapshot(tt.args.ctx, tt.args.input); (err != nil) != tt.wantErr {
 				t.Errorf("Ec2.DeleteSnapshot() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestEc2_DescribeSnapshots(t *testing.T) {
+	type fields struct {
+		Service ec2iface.EC2API
+	}
+	type args struct {
+		ctx   context.Context
+		input *ec2.DescribeSnapshotsInput
+	}
+	tests := []struct {
+		name    string
+		e       *Ec2
+		args    args
+		fields  fields
+		want    []*ec2.Snapshot
+		wantErr bool
+	}{
+		{
+			name:    "success case",
+			args:    args{ctx: context.TODO(), input: &ec2.DescribeSnapshotsInput{Filters: []*ec2.Filter{{Name: aws.String("description"), Values: aws.StringSlice([]string{fmt.Sprintf("*for %s from vol*", "i-123")})}}}},
+			fields:  fields{Service: newmockEC2Client(t, nil)},
+			want:    []*ec2.Snapshot{{SnapshotId: aws.String("snap-123")}, {SnapshotId: aws.String("snap-456")}},
+			wantErr: false,
+		},
+		{
+			name:    "aws error",
+			args:    args{ctx: context.TODO(), input: &ec2.DescribeSnapshotsInput{Filters: []*ec2.Filter{{Name: aws.String("description"), Values: aws.StringSlice([]string{fmt.Sprintf("*for %s from vol*", "i-123")})}}}},
+			fields:  fields{Service: newmockEC2Client(t, awserr.New("Bad Request", "boom.", nil))},
+			wantErr: true,
+		},
+		{
+			name:    "nil input",
+			args:    args{ctx: context.TODO(), input: nil},
+			fields:  fields{Service: newmockEC2Client(t, nil)},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Ec2{
+				Service: tt.fields.Service,
+			}
+			got, err := e.DescribeSnapshots(tt.args.ctx, tt.args.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Ec2.DescribeSnapshots() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Ec2.DescribeSnapshots() = %v, want %v", got, tt.want)
 			}
 		})
 	}

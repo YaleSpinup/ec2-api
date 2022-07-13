@@ -241,6 +241,13 @@ func (m mockEC2Client) CreateImageWithContext(ctx aws.Context, input *ec2.Create
 	return &ec2.CreateImageOutput{ImageId: aws.String("1234")}, nil
 }
 
+func (m mockEC2Client) DeregisterImageWithContext(ctx aws.Context, input *ec2.DeregisterImageInput, opts ...request.Option) (*ec2.DeregisterImageOutput, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return &ec2.DeregisterImageOutput{}, nil
+}
+
 func TestEc2_ListImages(t *testing.T) {
 	type fields struct {
 		session         *session.Session
@@ -616,6 +623,54 @@ func TestEc2_CreateImage(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("Ec2.CreateImage() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEc2_DeregisterImage(t *testing.T) {
+	type fields struct {
+		Service ec2iface.EC2API
+	}
+	type args struct {
+		ctx   context.Context
+		input *ec2.DeregisterImageInput
+	}
+	tests := []struct {
+		name    string
+		args    args
+		fields  fields
+		want    string
+		wantErr bool
+	}{
+		{
+			name:    "nil input",
+			args:    args{ctx: context.TODO(), input: nil},
+			fields:  fields{Service: newmockEC2Client(t, nil)},
+			wantErr: true,
+		},
+		{
+			name:    "success case",
+			args:    args{ctx: context.TODO(), input: &ec2.DeregisterImageInput{ImageId: aws.String("v-123")}},
+			fields:  fields{Service: newmockEC2Client(t, nil)},
+			wantErr: false,
+		},
+		{
+			name:    "aws error",
+			args:    args{ctx: context.TODO(), input: &ec2.DeregisterImageInput{ImageId: aws.String("v-123")}},
+			fields:  fields{Service: newmockEC2Client(t, awserr.New("Bad Request", "boom.", nil))},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Ec2{
+				Service: tt.fields.Service,
+			}
+			err := e.DeregisterImage(tt.args.ctx, tt.args.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Ec2.DeregisterImage() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
 		})
 	}
