@@ -667,7 +667,6 @@ func (s *server) InstanceProfileDeleteHandler(w http.ResponseWriter, r *http.Req
 	orch, err := s.newIAMOrchestrator(r.Context(), &sessionParams{
 		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
 		inlinePolicy: policy,
-		policyArns:   []string{},
 	})
 	if err != nil {
 		handleError(w, err)
