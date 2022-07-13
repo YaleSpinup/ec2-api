@@ -77,7 +77,7 @@ func (o *ec2Orchestrator) listSnapshots(ctx context.Context, perPage int64, page
 		input.MaxResults = aws.Int64(perPage)
 	}
 
-	out, err := o.ec2Client.DescribeSnapshots(ctx, input)
+	out, err := o.ec2Client.ListSnapshots(ctx, input)
 	if err != nil {
 		return nil, nil, common.ErrCode("listing snapshots", err)
 	}
