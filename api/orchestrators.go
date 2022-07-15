@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/YaleSpinup/ec2-api/ec2"
+	"github.com/YaleSpinup/ec2-api/iam"
 	"github.com/YaleSpinup/ec2-api/ssm"
 	log "github.com/sirupsen/logrus"
 )
@@ -60,6 +61,31 @@ func (s *server) newSSMOrchestrator(ctx context.Context, sp *sessionParams) (*ss
 
 	return &ssmOrchestrator{
 		ssmClient: ssm.New(ssm.WithSession(session.Session)),
+		server:    s,
+	}, nil
+}
+
+type iamOrchestrator struct {
+	iamClient *iam.Iam
+	server    *server
+}
+
+func (s *server) newIAMOrchestrator(ctx context.Context, sp *sessionParams) (*iamOrchestrator, error) {
+	log.Debugf("initializing iamOrchestrator")
+
+	session, err := s.assumeRole(
+		ctx,
+		s.session.ExternalID,
+		sp.role,
+		sp.inlinePolicy,
+		sp.policyArns...,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &iamOrchestrator{
+		iamClient: iam.New(iam.WithSession(session.Session)),
 		server:    s,
 	}, nil
 }

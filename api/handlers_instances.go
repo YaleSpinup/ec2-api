@@ -642,3 +642,42 @@ func (s *server) VolumeAttachHandler(w http.ResponseWriter, r *http.Request) {
 
 	handleResponseOk(w, out)
 }
+
+func (s *server) InstanceProfileDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	name := vars["name"]
+
+	policy, err := generatePolicy([]string{
+		"iam:GetInstanceProfile",
+		"iam:ListAttachedRolePolicies",
+		"iam:DetachRolePolicy",
+		"iam:ListRolePolicies",
+		"iam:DeleteRolePolicy",
+		"iam:RemoveRoleFromInstanceProfile",
+		"iam:DeleteRole",
+		"iam:DeleteInstanceProfile",
+	})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	orch, err := s.newIAMOrchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+	})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	err = orch.deleteInstanceProfile(r.Context(), name)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponseOk(w, nil)
+}

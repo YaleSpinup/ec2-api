@@ -78,7 +78,7 @@ func (s *server) routes() {
 
 	api.HandleFunc("/{account}/instances/{id}", s.InstanceDeleteHandler).Methods(http.MethodDelete)
 	api.HandleFunc("/{account}/instances/{id}/volumes/{vid}", s.VolumeDetachHandler).Methods(http.MethodDelete)
-	api.HandleFunc("/{account}/instanceprofiles/{name}", s.ProxyRequestHandler).Methods(http.MethodDelete)
+	api.HandleFunc("/{account}/instanceprofiles/{name}", s.InstanceProfileDeleteHandler).Methods(http.MethodDelete)
 	api.HandleFunc("/{account}/sgs/{id}", s.SecurityGroupDeleteHandler).Methods(http.MethodDelete)
 	api.HandleFunc("/{account}/volumes/{id}", s.VolumeDeleteHandler).Methods(http.MethodDelete)
 	api.HandleFunc("/{account}/snapshots/{id}", s.SnapshotDeleteHandler).Methods(http.MethodDelete)
