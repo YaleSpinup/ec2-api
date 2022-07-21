@@ -17,7 +17,7 @@ func (o *iamOrchestrator) deleteInstanceProfile(ctx context.Context, name string
 	ip, err := o.iamClient.GetInstanceProfile(ctx, &iam.GetInstanceProfileInput{InstanceProfileName: aws.String(name)})
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == iam.ErrCodeNoSuchEntityException {
-			return apierror.New(apierror.ErrBadRequest, "Instance profile not found", nil)
+			return apierror.New(apierror.ErrNotFound, "Instance profile not found", nil)
 		} else {
 			return common.ErrCode("failed to get instance profiles", err)
 		}
