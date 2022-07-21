@@ -6,6 +6,7 @@ import (
 	"github.com/YaleSpinup/apierror"
 	"github.com/YaleSpinup/ec2-api/common"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/iam"
 	log "github.com/sirupsen/logrus"
 )
@@ -18,7 +19,10 @@ func (i *Iam) GetInstanceProfile(ctx context.Context, input *iam.GetInstanceProf
 
 	out, err := i.Service.GetInstanceProfileWithContext(ctx, input)
 	if err != nil {
-		return nil, common.ErrCode("failed to get instanceprofiles", err)
+		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == iam.ErrCodeNoSuchEntityException {
+			return nil, apierror.New(apierror.ErrNotFound, "Instance profile not found", err)
+		}
+		return nil, common.ErrCode("failed to get instance profiles", err)
 	}
 	log.Debugf("got output instanceprofiles: %+v", out)
 
