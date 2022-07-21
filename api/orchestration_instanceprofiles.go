@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/YaleSpinup/apierror"
 	"github.com/YaleSpinup/ec2-api/common"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/iam"
 )
 
@@ -14,7 +16,11 @@ import (
 func (o *iamOrchestrator) deleteInstanceProfile(ctx context.Context, name string) error {
 	ip, err := o.iamClient.GetInstanceProfile(ctx, &iam.GetInstanceProfileInput{InstanceProfileName: aws.String(name)})
 	if err != nil {
-		return common.ErrCode("failed to get instance profiles", err)
+		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == iam.ErrCodeNoSuchEntityException {
+			return apierror.New(apierror.ErrBadRequest, "Instance profile not found", nil)
+		} else {
+			return common.ErrCode("failed to get instance profiles", err)
+		}
 	}
 
 	// detach policies from role(s) and delete the role(s)
