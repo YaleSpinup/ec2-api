@@ -14,7 +14,7 @@ import (
 func (o *iamOrchestrator) deleteInstanceProfile(ctx context.Context, name string) error {
 	ip, err := o.iamClient.GetInstanceProfile(ctx, &iam.GetInstanceProfileInput{InstanceProfileName: aws.String(name)})
 	if err != nil {
-		return common.ErrCode("failed to get instance profiles", err)
+		return err // do not modify this error
 	}
 
 	// detach policies from role(s) and delete the role(s)
