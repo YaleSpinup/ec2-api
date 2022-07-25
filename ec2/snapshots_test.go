@@ -134,7 +134,7 @@ func TestEc2_DeleteSnapshot(t *testing.T) {
 	}
 }
 
-func TestEc2_DescribeSnapshots(t *testing.T) {
+func TestEc2_ListSnapshots(t *testing.T) {
 	type fields struct {
 		Service ec2iface.EC2API
 	}
@@ -147,14 +147,14 @@ func TestEc2_DescribeSnapshots(t *testing.T) {
 		e       *Ec2
 		args    args
 		fields  fields
-		want    []*ec2.Snapshot
+		want    *ec2.DescribeSnapshotsOutput
 		wantErr bool
 	}{
 		{
 			name:    "success case",
 			args:    args{ctx: context.TODO(), input: &ec2.DescribeSnapshotsInput{Filters: []*ec2.Filter{{Name: aws.String("description"), Values: aws.StringSlice([]string{fmt.Sprintf("*for %s from vol*", "i-123")})}}}},
 			fields:  fields{Service: newmockEC2Client(t, nil)},
-			want:    []*ec2.Snapshot{{SnapshotId: aws.String("snap-123")}, {SnapshotId: aws.String("snap-456")}},
+			want:    &ec2.DescribeSnapshotsOutput{Snapshots: []*ec2.Snapshot{{SnapshotId: aws.String("snap-123")}, {SnapshotId: aws.String("snap-456")}}},
 			wantErr: false,
 		},
 		{
@@ -175,13 +175,13 @@ func TestEc2_DescribeSnapshots(t *testing.T) {
 			e := &Ec2{
 				Service: tt.fields.Service,
 			}
-			got, err := e.DescribeSnapshots(tt.args.ctx, tt.args.input)
+			got, err := e.ListSnapshots(tt.args.ctx, tt.args.input)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Ec2.DescribeSnapshots() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Ec2.ListSnapshots() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Ec2.DescribeSnapshots() = %v, want %v", got, tt.want)
+				t.Errorf("Ec2.ListSnapshots() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -17,18 +17,14 @@ func (s *server) SnapshotListHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	account := s.mapAccountNumber(vars["account"])
 
-	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
-
-	session, err := s.assumeRole(
-		r.Context(),
-		s.session.ExternalID,
-		role,
-		"",
-		"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
-	)
+	orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
+		role: fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+		},
+	})
 	if err != nil {
-		msg := fmt.Sprintf("failed to assume role in account: %s", account)
-		handleError(w, apierror.New(apierror.ErrForbidden, msg, err))
+		handleError(w, err)
 		return
 	}
 
@@ -49,12 +45,7 @@ func (s *server) SnapshotListHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	service := ec2.New(
-		ec2.WithSession(session.Session),
-		ec2.WithOrg(s.org),
-	)
-
-	out, next, err := service.ListSnapshots(r.Context(), "", int64(perPage), pageToken)
+	out, next, err := orch.listSnapshots(r.Context(), int64(perPage), pageToken)
 	if err != nil {
 		handleError(w, err)
 		return

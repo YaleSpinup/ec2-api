@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/YaleSpinup/apierror"
+	"github.com/YaleSpinup/ec2-api/common"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awsutil"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -60,4 +61,35 @@ func (o *ec2Orchestrator) deleteSnapshot(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+func (o *ec2Orchestrator) listSnapshots(ctx context.Context, perPage int64, pageToken *string) ([]map[string]*string, *string, error) {
+	log.Debugf("got request to list snapshots")
+
+	input := &ec2.DescribeSnapshotsInput{
+		OwnerIds: aws.StringSlice([]string{"self"}),
+	}
+	if pageToken != nil {
+		input.NextToken = pageToken
+	}
+
+	if perPage != 0 {
+		input.MaxResults = aws.Int64(perPage)
+	}
+
+	out, err := o.ec2Client.ListSnapshots(ctx, input)
+	if err != nil {
+		return nil, nil, common.ErrCode("listing snapshots", err)
+	}
+
+	log.Debugf("returning list of %d snapshots", len(out.Snapshots))
+
+	list := make([]map[string]*string, len(out.Snapshots))
+	for i, s := range out.Snapshots {
+		list[i] = map[string]*string{
+			"id": s.SnapshotId,
+		}
+	}
+
+	return list, out.NextToken, nil
 }

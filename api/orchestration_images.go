@@ -59,11 +59,11 @@ func (o *ec2Orchestrator) deleteImage(ctx context.Context, id string) error {
 		Filters: []*ec2.Filter{{Name: aws.String("description"), Values: aws.StringSlice([]string{fmt.Sprintf("*for %s from vol*", id)})}},
 	}
 
-	out, err := o.ec2Client.DescribeSnapshots(ctx, snapshotinput)
+	out, err := o.ec2Client.ListSnapshots(ctx, snapshotinput)
 	if err != nil {
 		return err
 	}
-	for _, s := range out {
+	for _, s := range out.Snapshots {
 		input := &ec2.DeleteSnapshotInput{
 			SnapshotId: (s.SnapshotId),
 		}
