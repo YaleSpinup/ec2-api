@@ -18,8 +18,7 @@ func (s *server) SnapshotListHandler(w http.ResponseWriter, r *http.Request) {
 	account := s.mapAccountNumber(vars["account"])
 
 	orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
-		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
-		inlinePolicy: "",
+		role: fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
 		policyArns: []string{
 			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
 		},
