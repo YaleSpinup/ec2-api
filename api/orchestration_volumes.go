@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/YaleSpinup/apierror"
+	"github.com/YaleSpinup/ec2-api/common"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awsutil"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -68,4 +69,21 @@ func (o *ec2Orchestrator) modifyVolume(ctx context.Context, req *Ec2VolumeUpdate
 	}
 
 	return aws.StringValue(out.VolumeId), nil
+}
+
+func (o *ec2Orchestrator) getVolumes(ctx context.Context, ids ...string) ([]*ec2.Volume, error) {
+	f := &ec2.Filter{
+		Name:   aws.String("volume-id"),
+		Values: aws.StringSlice(ids),
+	}
+	input := ec2.DescribeVolumesInput{
+		Filters: []*ec2.Filter{f},
+	}
+
+	out, err := o.ec2Client.Service.DescribeVolumesWithContext(ctx, &input)
+	if err != nil {
+		return nil, common.ErrCode("getting details for volumes", err)
+	}
+	return out.Volumes, nil
+
 }

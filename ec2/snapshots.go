@@ -19,7 +19,6 @@ func (e *Ec2) ListSnapshots(ctx context.Context, input *ec2.DescribeSnapshotsInp
 	if err != nil {
 		return nil, common.ErrCode("failed to list snapshot", err)
 	}
-	log.Debugf("list snapshots output: %+v", out)
 
 	if out == nil {
 		return nil, apierror.New(apierror.ErrBadRequest, "unexpected list snapshot response", nil)

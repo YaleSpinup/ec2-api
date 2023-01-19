@@ -48,6 +48,7 @@ func (s *server) routes() {
 	api.HandleFunc("/{account}/volumes/{id}/modifications", s.VolumeListModificationsHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/volumes/{id}/snapshots", s.VolumeListSnapshotsHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/snapshots", s.SnapshotListHandler).Methods(http.MethodGet)
+	api.HandleFunc("/{account}/snapshots/synctags", s.SnapshotSyncTagHandler).Methods(http.MethodPut)
 	api.HandleFunc("/{account}/snapshots/{id}", s.SnapshotGetHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/subnets", s.SubnetsListHandler).Methods(http.MethodGet).Queries("vpc", "{vpc}")
 	api.HandleFunc("/{account}/subnets", s.SubnetsListHandler).Methods(http.MethodGet)

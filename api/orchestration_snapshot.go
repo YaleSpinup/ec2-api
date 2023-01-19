@@ -63,12 +63,13 @@ func (o *ec2Orchestrator) deleteSnapshot(ctx context.Context, id string) error {
 	return nil
 }
 
-func (o *ec2Orchestrator) listSnapshots(ctx context.Context, perPage int64, pageToken *string) ([]map[string]*string, *string, error) {
-	log.Debugf("got request to list snapshots")
+func (o *ec2Orchestrator) listSnapshots(ctx context.Context, perPage int64, pageToken *string, filters ...*ec2.Filter) ([]*ec2.Snapshot, *string, error) {
 
 	input := &ec2.DescribeSnapshotsInput{
 		OwnerIds: aws.StringSlice([]string{"self"}),
+		Filters:  filters,
 	}
+
 	if pageToken != nil {
 		input.NextToken = pageToken
 	}
@@ -84,12 +85,6 @@ func (o *ec2Orchestrator) listSnapshots(ctx context.Context, perPage int64, page
 
 	log.Debugf("returning list of %d snapshots", len(out.Snapshots))
 
-	list := make([]map[string]*string, len(out.Snapshots))
-	for i, s := range out.Snapshots {
-		list[i] = map[string]*string{
-			"id": s.SnapshotId,
-		}
-	}
-
-	return list, out.NextToken, nil
+	return out.Snapshots, out.NextToken, nil
 }
+
