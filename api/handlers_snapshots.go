@@ -50,14 +50,57 @@ func (s *server) SnapshotListHandler(w http.ResponseWriter, r *http.Request) {
 		handleError(w, err)
 		return
 	}
+	list := make([]map[string]*string, len(out))
+	for i, s := range out {
+		list[i] = map[string]*string{
+			"id": s.SnapshotId,
+		}
+	}
 
-	w.Header().Set("X-Items", strconv.Itoa(len(out)))
+	w.Header().Set("X-Items", strconv.Itoa(len(list)))
 	if next != nil {
 		w.Header().Set("X-Per-Page", strconv.Itoa(perPage))
 		w.Header().Set("X-Next-Token", aws.StringValue(next))
 	}
 
-	handleResponseOk(w, out)
+	handleResponseOk(w, list)
+}
+
+func (s *server) SnapshotSyncTagHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{ResponseWriter: w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+
+	policy, err := tagCreatePolicy()
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+	orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+		},
+	})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	out, err := SnapshotsWithoutCOA(r.Context(), orch)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	stats, err := UpdateSnapshotTags(r.Context(), orch, out)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponseOk(w, stats)
 }
 
 func (s *server) SnapshotGetHandler(w http.ResponseWriter, r *http.Request) {
