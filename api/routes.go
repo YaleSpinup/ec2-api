@@ -52,6 +52,7 @@ func (s *server) routes() {
 	api.HandleFunc("/{account}/snapshots/{id}", s.SnapshotGetHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/subnets", s.SubnetsListHandler).Methods(http.MethodGet).Queries("vpc", "{vpc}")
 	api.HandleFunc("/{account}/subnets", s.SubnetsListHandler).Methods(http.MethodGet)
+	api.HandleFunc("/{account}/subnets/{id}", s.SubnetGetHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/images", s.ImageListHandler).Methods(http.MethodGet).Queries("name", "{name}")
 	api.HandleFunc("/{account}/images", s.ImageListHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/images/{id}", s.ImageGetHandler).Methods(http.MethodGet)

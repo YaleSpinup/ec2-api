@@ -614,6 +614,28 @@ func toEc2VpcResponse(vpc *ec2.Vpc) *Ec2VpcResponse {
 	}
 }
 
+type Ec2SubnetResponse struct {
+	Id               string              `json:"id"`
+	VpcId            string              `json:"vpc_id"`
+	AvailabilityZone string              `json:"availability_zone"`
+	DefaultForAz     bool                `json:"default_for_az"`
+	CIDRBlock        string              `json:"cidr_block"`
+	State            string              `json:"state"`
+	Tags             []map[string]string `json:"tags"`
+}
+
+func toEc2SubnetResponse(subnet *ec2.Subnet) *Ec2SubnetResponse {
+	return &Ec2SubnetResponse{
+		Id:               aws.StringValue(subnet.SubnetId),
+		VpcId:            aws.StringValue(subnet.VpcId),
+		AvailabilityZone: aws.StringValue(subnet.AvailabilityZone),
+		DefaultForAz:     aws.BoolValue(subnet.DefaultForAz),
+		CIDRBlock:        aws.StringValue(subnet.CidrBlock),
+		State:            aws.StringValue(subnet.State),
+		Tags:             tagsList(subnet.Tags),
+	}
+}
+
 func tagsList(tags []*ec2.Tag) (res []map[string]string) {
 	for _, t := range tags {
 		res = append(res, map[string]string{

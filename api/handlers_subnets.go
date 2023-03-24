@@ -45,3 +45,38 @@ func (s *server) SubnetsListHandler(w http.ResponseWriter, r *http.Request) {
 
 	handleResponseOk(w, out)
 }
+
+func (s *server) SubnetGetHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	id := vars["id"]
+
+	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
+
+	session, err := s.assumeRole(
+		r.Context(),
+		s.session.ExternalID,
+		role,
+		"",
+		"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+	)
+	if err != nil {
+		msg := fmt.Sprintf("failed to assume role in account: %s", account)
+		handleError(w, apierror.New(apierror.ErrForbidden, msg, err))
+		return
+	}
+
+	service := ec2.New(
+		ec2.WithSession(session.Session),
+		ec2.WithOrg(s.org),
+	)
+
+	out, err := service.GetSubnetByID(r.Context(), id)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponseOk(w, toEc2SubnetResponse(out))
+}
