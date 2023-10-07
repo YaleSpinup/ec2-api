@@ -1,7 +1,7 @@
 github.com/YaleSpinup/apierror v0.1.0 h1:XiL1AQTsZ9ariWE1BngpDeG+YZjQFX/a/OX25AkWQj8=
 github.com/YaleSpinup/apierror v0.1.0/go.mod h1:m68Zb59VAV7MUGwzcYe6vb/FU/DO/QGMbFumkHoyQMQ=
-github.com/YaleSpinup/aws-go v0.2.0 h1:CNi2H50o/+UebQs4BDoxkXWBcJnA1CiBEf9wilDvFSg=
-github.com/YaleSpinup/aws-go v0.2.0/go.mod h1:LLlZfdLVtyRZJBOQcV0ekL9PSs46p5dup3WtBexw+2A=
+github.com/YaleSpinup/aws-go v0.2.1 h1:mZaDTon3IBE9a7mHoRCbwMQN5oDmo0qGghM5NWnRMig=
+github.com/YaleSpinup/aws-go v0.2.1/go.mod h1:e3Z18+mB5bXZWZ8cbpI+GZ6EG4Haw21yuQF7yyyM+bI=
 github.com/aws/amazon-ec2-instance-selector/v2 v2.3.0 h1:EcP2xXjzr7+I58EjmrRfZnVGVe32mgAijCIS6LB/1qM=
 github.com/aws/amazon-ec2-instance-selector/v2 v2.3.0/go.mod h1:/KFJVMLvjzGl+KsAzEkrZ09wCYlbYAdXmPGxLvlwAr0=
 github.com/aws/aws-sdk-go v1.44.0 h1:jwtHuNqfnJxL4DKHBUVUmQlfueQqBW7oXP6yebZR/R0=
