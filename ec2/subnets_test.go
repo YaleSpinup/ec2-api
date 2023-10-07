@@ -126,36 +126,50 @@ func (m *mockEC2Client) DescribeSubnetsWithContext(ctx context.Context, input *e
 		return nil, m.err
 	}
 
-	subnets := []*ec2.Subnet{}
+	var subnets []*ec2.Subnet
+
 	for _, s := range testSubnets {
-		match := true
-		for _, f := range input.Filters {
-			switch aws.StringValue(f.Name) {
-			case "vpc-id":
-				var matchesVpc bool
-				for _, v := range aws.StringValueSlice(f.Values) {
-					if v == aws.StringValue(s.VpcId) {
-						matchesVpc = true
+		match := false
+
+		// If passing SubnetIds assume it's from GetSubnetByID
+		if input.SubnetIds != nil {
+			for _, id := range input.SubnetIds {
+				if aws.StringValue(id) == aws.StringValue(s.SubnetId) {
+					subnets = append(subnets, s)
+				}
+			}
+			// Otherwise it's list all Subnets
+		} else {
+			match = true
+
+			for _, f := range input.Filters {
+				switch aws.StringValue(f.Name) {
+				case "vpc-id":
+					var matchesVpc bool
+					for _, v := range aws.StringValueSlice(f.Values) {
+						if v == aws.StringValue(s.VpcId) {
+							matchesVpc = true
+							break
+						}
+					}
+
+					if !matchesVpc {
+						match = false
 						break
 					}
-				}
+				case "state":
+					var matchesState bool
+					for _, v := range aws.StringValueSlice(f.Values) {
+						if v == aws.StringValue(s.State) {
+							matchesState = true
+							break
+						}
+					}
 
-				if !matchesVpc {
-					match = false
-					break
-				}
-			case "state":
-				var matchesState bool
-				for _, v := range aws.StringValueSlice(f.Values) {
-					if v == aws.StringValue(s.State) {
-						matchesState = true
+					if !matchesState {
+						match = false
 						break
 					}
-				}
-
-				if !matchesState {
-					match = false
-					break
 				}
 			}
 		}
@@ -262,6 +276,68 @@ func TestEc2_ListSubnets(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Ec2.ListSubnets() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEc2_GetSubnetByID(t *testing.T) {
+	type fields struct {
+		session         *session.Session
+		Service         ec2iface.EC2API
+		DefaultKMSKeyId string
+		DefaultSgs      []string
+		DefaultSubnets  []string
+		org             string
+	}
+	type args struct {
+		ctx context.Context
+		id  string
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *ec2.Subnet
+		wantErr bool
+	}{
+		{
+			name:   "valid subnet",
+			fields: fields{Service: newmockEC2Client(t, nil)},
+			args:   args{ctx: context.TODO(), id: "subnet-aabbccdd"},
+			want:   testSubnets[0],
+		},
+		{
+			name:    "unknown subnet",
+			fields:  fields{Service: newmockEC2Client(t, nil)},
+			args:    args{ctx: context.TODO(), id: "subnet-gbadsgad"},
+			wantErr: true,
+		},
+		{
+			name:    "aws error",
+			args:    args{ctx: context.TODO()},
+			fields:  fields{Service: newmockEC2Client(t, awserr.New("Bad Request", "boom.", nil))},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Ec2{
+				session:         tt.fields.session,
+				Service:         tt.fields.Service,
+				DefaultKMSKeyId: tt.fields.DefaultKMSKeyId,
+				DefaultSgs:      tt.fields.DefaultSgs,
+				DefaultSubnets:  tt.fields.DefaultSubnets,
+				org:             tt.fields.org,
+			}
+			got, err := e.GetSubnetByID(tt.args.ctx, tt.args.id)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Ec2.GetSubnetByID() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Ec2.GetSubnetByID() = %v, want %v", got, tt.want)
 			}
 		})
 	}

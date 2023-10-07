@@ -53,3 +53,18 @@ func (e *Ec2) ListSubnets(ctx context.Context, vpc string) ([]map[string]string,
 
 	return subnets, nil
 }
+
+func (e *Ec2) GetSubnetByID(ctx context.Context, id string) (*ec2.Subnet, error) {
+	out, err := e.Service.DescribeSubnetsWithContext(ctx, &ec2.DescribeSubnetsInput{
+		SubnetIds: []*string{aws.String(id)},
+	})
+	if err != nil {
+		return nil, common.ErrCode("describing subnet", err)
+	}
+	log.Debugf("got output describing Subnet : %+v", out)
+
+	if len(out.Subnets) == 0 {
+		return nil, apierror.New(apierror.ErrNotFound, "subnet not found", nil)
+	}
+	return out.Subnets[0], nil
+}
