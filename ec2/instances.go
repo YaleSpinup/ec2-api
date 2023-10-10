@@ -96,10 +96,10 @@ func (e *Ec2) ListInstances(ctx context.Context, org string, per int64, next *st
 			var instanceName *string
 
 			for _, tag := range i.Tags {
-					if *tag.Key == "Name" {
-							instanceName = tag.Value
-							break
-					}
+				if *tag.Key == "Name" {
+					instanceName = tag.Value
+					break
+				}
 			}
 
 			list = append(list, map[string]*string{
