@@ -3,7 +3,7 @@ module github.com/YaleSpinup/ec2-api
 go 1.21
 
 require (
-	github.com/YaleSpinup/apierror v0.1.1
+	github.com/YaleSpinup/apierror v0.1.5
 	github.com/YaleSpinup/aws-go v0.2.1
 	github.com/aws/amazon-ec2-instance-selector/v2 v2.4.1
 	github.com/aws/aws-sdk-go v1.45.24
