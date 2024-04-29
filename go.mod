@@ -6,15 +6,15 @@ require (
 	github.com/YaleSpinup/apierror v0.1.5
 	github.com/YaleSpinup/aws-go v0.2.5
 	github.com/aws/amazon-ec2-instance-selector/v2 v2.4.1
-  github.com/aws/aws-sdk-go v1.47.9
-  github.com/gorilla/handlers v1.5.2
-  github.com/google/uuid v1.5.0
+	github.com/aws/aws-sdk-go v1.47.9
+	github.com/google/uuid v1.5.0
+	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.17.0
 	github.com/sirupsen/logrus v1.9.3
-	golang.org/x/crypto v0.14.0
+	golang.org/x/crypto v0.17.0
 )
 
 require (
@@ -48,7 +48,7 @@ require (
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/sahilm/fuzzy v0.1.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/sys v0.14.0 // indirect
-	golang.org/x/term v0.13.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/term v0.15.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 )
