@@ -2,7 +2,9 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 
@@ -149,9 +151,89 @@ func (s *server) InstanceListHandler(w http.ResponseWriter, r *http.Request) {
 		ec2.WithOrg(s.org),
 	)
 
-	// TODO an api should be for one org, currently we need to suppor the entire acocunt
+	// TODO an api should be for one org, currently we need to support the entire account
 	out, next, err := service.ListInstances(r.Context(), "", int64(perPage), pageToken)
 	// out, next, err := service.ListInstances(r.Context(), s.org, int64(perPage), pageToken)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	w.Header().Set("X-Items", strconv.Itoa(len(out)))
+	if next != nil {
+		w.Header().Set("X-Per-Page", strconv.Itoa(perPage))
+		w.Header().Set("X-Next-Token", aws.StringValue(next))
+	}
+
+	handleResponseOk(w, out)
+}
+
+func GetQueryArrayValues(r *http.Request, key string) ([]string, error) {
+	var values []string
+
+	queryValues := r.URL.Query()
+
+	v, ok := queryValues["azs"]
+	if !ok {
+		log.Error("Missing 'azs' parameter")
+		return []string{}, errors.New("missing 'azs' parameter")
+	}
+
+	// loop through the values
+	for i, value := range v {
+		log.Debug(fmt.Printf("Value %d: %s\n", i, value))
+		values = append(values, value)
+	}
+
+	return values, nil
+}
+
+func (s *server) InstanceListTypeOfferings(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+
+	azs, err := GetQueryArrayValues(r, "azs")
+	if err != nil {
+		handleError(w, err)
+	}
+
+	session, err := s.assumeRole(
+		r.Context(),
+		s.session.ExternalID,
+		fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		"",
+		"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+	)
+	if err != nil {
+		msg := fmt.Sprintf("failed to assume role in account: %s", account)
+		handleError(w, apierror.New(apierror.ErrForbidden, msg, err))
+		return
+	}
+
+	perPage := 1000
+	var pageToken *string
+	for name, values := range r.URL.Query() {
+		if name == "next" {
+			pageToken = aws.String(values[0])
+		}
+
+		if name == "limit" {
+			limit, err := strconv.Atoi(values[0])
+			if err != nil {
+				handleError(w, fmt.Errorf("failed to parse limit parameter: %s", err))
+				return
+			}
+			perPage = limit
+		}
+	}
+
+	service := ec2.New(
+		ec2.WithSession(session.Session),
+		ec2.WithOrg(s.org),
+	)
+
+	out, next, err := service.ListInstanceTypeOfferings(r.Context(), azs, int64(perPage), pageToken)
 	if err != nil {
 		handleError(w, err)
 		return

@@ -54,6 +54,73 @@ func (e *Ec2) DeleteInstance(ctx context.Context, id string) error {
 	return nil
 }
 
+//$ec2 = AWS::createClient('ec2');
+//
+//try {
+//// Describe the available instance types
+//$result = $ec2->describeInstanceTypeOfferings([
+//'LocationType' => 'availability-zone',
+//'Filters' => [
+//[
+//'Name' => 'location',
+//'Values' => [$availabilityZone],
+//],
+//],
+//]);
+//
+//$instanceTypes = [];
+//
+//// Extract the instance types from the response
+//foreach ($result->get('InstanceTypeOfferings') as $offering) {
+//$instanceTypes[] = $offering['InstanceType'];
+//}
+//
+//return response()->json([
+//'instanceTypes' => $instanceTypes,
+//]);
+//} catch (Aws\Exception\AwsException $e) {
+//// Handle AWS errors
+//return response()->json([
+//'error' => $e->getMessage(),
+//], 500);
+//} catch (Exception $e) {
+//// Handle other exceptions
+//return response()->json([
+//'error' => $e->getMessage(),
+//], 500);
+//}
+
+func (e *Ec2) ListInstanceTypeOfferings(ctx context.Context, azs []string, per int64, next *string) ([]*ec2.InstanceTypeOffering, *string, error) {
+	log.Infof("listing ec2 instance type offerings")
+
+	var nextToken *string
+	if next != nil {
+		nextToken = next
+	}
+
+	filters := []*ec2.Filter{
+		{
+			Name:   aws.String("location"),
+			Values: aws.StringSlice(azs),
+		},
+	}
+
+	out, err := e.Service.DescribeInstanceTypeOfferingsWithContext(ctx, &ec2.DescribeInstanceTypeOfferingsInput{
+		Filters:      filters,
+		LocationType: aws.String("availability-zone"),
+		MaxResults:   aws.Int64(per),
+		NextToken:    nextToken,
+	})
+
+	if err != nil {
+		return nil, nil, common.ErrCode("listing instance type offerings", err)
+	}
+
+	log.Debugf("gout output from instance type offerings list %+v", out)
+
+	return out.InstanceTypeOfferings, out.NextToken, nil
+}
+
 // ListInstances lists the instances that are not terminated and not spot
 func (e *Ec2) ListInstances(ctx context.Context, org string, per int64, next *string) ([]map[string]*string, *string, error) {
 	log.Infof("listing ec2 instances")
@@ -78,7 +145,7 @@ func (e *Ec2) ListInstances(ctx context.Context, org string, per int64, next *st
 	})
 
 	if err != nil {
-		return nil, nil, common.ErrCode("listing insances", err)
+		return nil, nil, common.ErrCode("listing instances", err)
 	}
 
 	log.Debugf("got output from instance list %+v", out)
@@ -103,8 +170,8 @@ func (e *Ec2) ListInstances(ctx context.Context, org string, per int64, next *st
 			}
 
 			list = append(list, map[string]*string{
-				"id": i.InstanceId,
-				"name": instanceName,
+				"id":    i.InstanceId,
+				"name":  instanceName,
 				"state": i.State.Name,
 			})
 		}
