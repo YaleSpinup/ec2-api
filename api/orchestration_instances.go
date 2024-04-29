@@ -22,8 +22,13 @@ func (o *ec2Orchestrator) createInstance(ctx context.Context, req *Ec2InstanceCr
 	log.Debugf("got request to create instance: %s", awsutil.Prettify(req))
 
 	input := &ec2.RunInstancesInput{
-		MinCount:         aws.Int64(1),
-		MaxCount:         aws.Int64(1),
+		MinCount: aws.Int64(1),
+		MaxCount: aws.Int64(1),
+		MetadataOptions: &ec2.InstanceMetadataOptionsRequest{
+			HttpEndpoint:            aws.String(ec2.InstanceMetadataEndpointStateEnabled),
+			HttpPutResponseHopLimit: aws.Int64(2),
+			HttpTokens:              aws.String(ec2.HttpTokensStateRequired),
+		},
 		InstanceType:     req.Type,
 		ImageId:          req.Image,
 		SubnetId:         req.Subnet,
