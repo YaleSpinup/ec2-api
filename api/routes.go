@@ -33,6 +33,7 @@ func (s *server) routes() {
 
 	// instance endpoints
 	api.HandleFunc("/{account}/instances", s.InstanceListHandler).Methods(http.MethodGet)
+	api.HandleFunc("/{account}/instances/types", s.InstanceListTypeOfferings).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/instances/{id}", s.InstanceGetHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/instances/{id}/volumes", s.InstanceVolumesHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/instances/{id}/volumes/{vid}", s.InstanceVolumesHandler).Methods(http.MethodGet)

@@ -15,6 +15,7 @@ GET /v2/ec2/metrics
 
 # Managing Instances
 GET /v2/ec2/{account}/instances
+GET /v2/ec2/{account}/instances/types
 GET /v2/ec2/{account}/instances/{id}
 GET /v2/ec2/{account}/instances/{id}/volumes
 GET /v2/ec2/{account}/instances/{id}/volumes/{vid}
