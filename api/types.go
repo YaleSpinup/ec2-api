@@ -461,15 +461,16 @@ type Ec2SecurityGroupRequest struct {
 }
 
 type Ec2SecurityGroupRuleRequest struct {
-	RuleType    *string            `json:"rule_type"`   // Direction of traffic: [inbound|outbound]
-	Action      *string            `json:"action"`      // Adding or removing the rule: [add|remove]
-	CidrIp      *string            `json:"cidr_ip"`     // IPv4 CIDR address range to allow traffic to/from
-	SgId        *string            `json:"sg_id"`       // Security group to allow traffic to/from
-	IpProtocol  *string            `json:"ip_protocol"` // IP Protocol name [tcp|udp|icmp|-1]
-	FromPort    *int64             `json:"from_port"`   // The starting port (not required if Protocol -1)
-	ToPort      *int64             `json:"to_port"`     // The ending port (not required if Protocol -1)
-	Description *string            `json:"description"` // Optional description for this rule
-	Tags        *map[string]string `json:"tags,omitempty"`
+	RuleType     *string            `json:"rule_type"`      // Direction of traffic: [inbound|outbound]
+	Action       *string            `json:"action"`         // Adding or removing the rule: [add|remove]
+	CidrIp       *string            `json:"cidr_ip"`        // IPv4 CIDR address range to allow traffic to/from
+	SgId         *string            `json:"sg_id"`          // Security group to allow traffic to/from
+	IpProtocol   *string            `json:"ip_protocol"`    // IP Protocol name [tcp|udp|icmp|-1]
+	PrefixListId *string            `json:"prefix_list_id"` // The prefix list id to associate a rule with
+	FromPort     *int64             `json:"from_port"`      // The starting port (not required if Protocol -1)
+	ToPort       *int64             `json:"to_port"`        // The ending port (not required if Protocol -1)
+	Description  *string            `json:"description"`    // Optional description for this rule
+	Tags         *map[string]string `json:"tags,omitempty"`
 }
 
 type Ec2SecurityGroupUserIdGroupPair struct {
@@ -593,25 +594,43 @@ func toEc2SecurityGroupResponse(sg *ec2.SecurityGroup) *Ec2SecurityGroupResponse
 }
 
 type Ec2VpcResponse struct {
-	Id              string              `json:"id"`
-	CIDRBlock       string              `json:"cidr_block"`
-	DHCPOptionsId   string              `json:"dhcp_options_id"`
-	State           string              `json:"state"`
-	InstanceTenancy string              `json:"instance_tenancy"`
-	IsDefault       bool                `json:"is_default"`
-	Tags            []map[string]string `json:"tags"`
+	Id                   string                     `json:"id"`
+	CIDRBlock            string                     `json:"cidr_block"`
+	CIDRBlockAssociation []*Ec2CidrBlockAssociation `json:"cidr_block_association"`
+	DHCPOptionsId        string                     `json:"dhcp_options_id"`
+	State                string                     `json:"state"`
+	InstanceTenancy      string                     `json:"instance_tenancy"`
+	IsDefault            bool                       `json:"is_default"`
+	Tags                 []map[string]string        `json:"tags"`
 }
 
 func toEc2VpcResponse(vpc *ec2.Vpc) *Ec2VpcResponse {
 	return &Ec2VpcResponse{
-		Id:              aws.StringValue(vpc.VpcId),
-		CIDRBlock:       aws.StringValue(vpc.CidrBlock),
-		DHCPOptionsId:   aws.StringValue(vpc.DhcpOptionsId),
-		State:           aws.StringValue(vpc.State),
-		InstanceTenancy: aws.StringValue(vpc.InstanceTenancy),
-		IsDefault:       aws.BoolValue(vpc.IsDefault),
-		Tags:            tagsList(vpc.Tags),
+		Id:                   aws.StringValue(vpc.VpcId),
+		CIDRBlock:            aws.StringValue(vpc.CidrBlock),
+		CIDRBlockAssociation: toEc2CidrBlockAssociationResponse(vpc.CidrBlockAssociationSet),
+		DHCPOptionsId:        aws.StringValue(vpc.DhcpOptionsId),
+		State:                aws.StringValue(vpc.State),
+		InstanceTenancy:      aws.StringValue(vpc.InstanceTenancy),
+		IsDefault:            aws.BoolValue(vpc.IsDefault),
+		Tags:                 tagsList(vpc.Tags),
 	}
+}
+
+func toEc2CidrBlockAssociationResponse(association []*ec2.VpcCidrBlockAssociation) []*Ec2CidrBlockAssociation {
+	var blocks []*Ec2CidrBlockAssociation
+	for _, v := range association {
+		blocks = append(blocks, &Ec2CidrBlockAssociation{
+			AssociationId: aws.StringValue(v.AssociationId),
+			CidrBlock:     aws.StringValue(v.CidrBlock),
+		})
+	}
+	return blocks
+}
+
+type Ec2CidrBlockAssociation struct {
+	AssociationId string `json:"association_id"`
+	CidrBlock     string `json:"cidr_block"`
 }
 
 type Ec2SubnetResponse struct {

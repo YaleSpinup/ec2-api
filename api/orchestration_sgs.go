@@ -130,6 +130,20 @@ func ipPermissionsFromRequest(r *Ec2SecurityGroupRuleRequest) []*ec2.IpPermissio
 		})
 	}
 
+	if r.PrefixListId != nil {
+		ipPermissions = append(ipPermissions, &ec2.IpPermission{
+			IpProtocol: r.IpProtocol,
+			FromPort:   r.FromPort,
+			ToPort:     r.ToPort,
+			PrefixListIds: []*ec2.PrefixListId{
+				{
+					Description:  r.Description,
+					PrefixListId: r.PrefixListId,
+				},
+			},
+		})
+	}
+
 	return ipPermissions
 }
 
