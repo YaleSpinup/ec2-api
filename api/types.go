@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/aws/aws-sdk-go/service/iam"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -77,6 +78,12 @@ type Volume struct {
 	DeleteOnTermination bool   `json:"delete_on_termination"`
 	Status              string `json:"status"`
 	DeviceName          string `json:"device_name"`
+}
+
+type Ec2InstanceProfile struct {
+	Profile          *iam.InstanceProfile
+	AttachedPolicies []*iam.AttachedPolicy
+	InlinePolicies   []*string
 }
 
 type Ec2InstanceResponse struct {

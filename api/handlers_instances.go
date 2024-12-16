@@ -763,3 +763,86 @@ func (s *server) InstanceProfileDeleteHandler(w http.ResponseWriter, r *http.Req
 
 	handleResponseOk(w, nil)
 }
+
+type Ec2InstanceProfileCopyRequest struct {
+	InstanceID string
+}
+
+func (s *server) InstanceProfileCopyHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	name := vars["name"]
+
+	policy, err := instanceProfileCopyPolicy()
+
+	req := Ec2InstanceProfileCopyRequest{}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		msg := fmt.Sprintf("cannot decode body into iam profile copy input: %s", err)
+		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
+		return
+	}
+
+	ec2Orch, err := s.newEc2Orchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+		policyArns: []string{
+			"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+		},
+	})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	iamOrch, err := s.newIAMOrchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+	})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	ip, ipErr := iamOrch.copyInstanceProfile(r.Context(), ec2Orch.ec2Client, req.InstanceID, name, account)
+	if ipErr != nil {
+		handleError(w, ipErr)
+		return
+	}
+
+	handleResponseOk(w, ip)
+}
+
+func (s *server) InstanceProfileGetHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	name := vars["name"]
+
+	policy, err := generatePolicy([]string{
+		"iam:GetInstanceProfile",
+		"iam:ListAttachedRolePolicies",
+		"iam:ListRolePolicies",
+	})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	orch, err := s.newIAMOrchestrator(r.Context(), &sessionParams{
+		role:         fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName),
+		inlinePolicy: policy,
+	})
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	ip, ipErr := orch.getInstanceProfile(r.Context(), name)
+	if ipErr != nil {
+		handleError(w, ipErr)
+		return
+	}
+
+	handleResponseOk(w, ip)
+}

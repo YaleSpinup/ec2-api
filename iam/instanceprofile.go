@@ -33,6 +33,8 @@ func (i *Iam) GetInstanceProfile(ctx context.Context, input *iam.GetInstanceProf
 	return out.InstanceProfile, nil
 }
 
+//func (i *Iam) AttachRolePolicy(ctx context.Context, input *iam.AttachRolePolicyInput) (*iam.AttachRolePolicyOutput, error) {}
+
 func (i *Iam) ListAttachedRolePolicies(ctx context.Context, input *iam.ListAttachedRolePoliciesInput) ([]*iam.AttachedPolicy, error) {
 	if input == nil {
 		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)

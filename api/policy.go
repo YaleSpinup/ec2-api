@@ -62,6 +62,62 @@ func instanceCreatePolicy() (string, error) {
 	return string(j), nil
 }
 
+func inlineBucketAccessPolicy(bucket string) (string, error) {
+	log.Debugf("generating instance crete policy document")
+
+	policy := iam.PolicyDocument{
+		Version: "2012-10-17",
+		Statement: []iam.StatementEntry{
+			{
+				Effect: "Allow",
+				Action: []string{
+					"s3:PutObject",
+					"s3:GetObject",
+					"s3:ListBucket",
+					"s3:DeleteObject",
+					"s3:GetBucketMetadataTableConfiguration",
+				},
+				Resource: []string{
+					fmt.Sprintf("arn:aws:s3:::%s", bucket),
+					fmt.Sprintf("arn:aws:s3:::%s/*", bucket),
+				},
+			},
+		},
+	}
+
+	j, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+
+	return string(j), nil
+}
+
+func instanceProfileCopyPolicy() (string, error) {
+	log.Debugf("generating instance crete policy document")
+
+	policy := iam.PolicyDocument{
+		Version: "2012-10-17",
+		Statement: []iam.StatementEntry{
+			{
+				Effect: "Allow",
+				Action: []string{
+					"ec2:*",
+					"iam:*",
+				},
+				Resource: []string{"*"},
+			},
+		},
+	}
+
+	j, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+
+	return string(j), nil
+}
+
 func instanceDeletePolicy(id string) (string, error) {
 	log.Debugf("generating instance delete policy document")
 
