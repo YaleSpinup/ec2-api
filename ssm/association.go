@@ -40,3 +40,33 @@ func (s *SSM) CreateAssociation(ctx context.Context, instanceId, docName string)
 	log.Debugf("got output creating SSM Association: %+v", out)
 	return aws.StringValue(out.AssociationDescription.AssociationId), nil
 }
+
+func (s *SSM) CreateAssociationByTag(ctx context.Context, tagKey string, tagValues []string, docName string) (string, error) {
+	// Check for missing values
+	if tagKey == "" || tagValues == nil {
+		return "", apierror.New(apierror.ErrBadRequest, "both tagKey and tagValues should be present", nil)
+	}
+	if docName == "" {
+		return "", apierror.New(apierror.ErrBadRequest, "docName should be present", nil)
+	}
+
+	// Create the Targets structure
+	targets := []*ssm.Target{
+		{
+			Key:    aws.String(tagKey),
+			Values: aws.StringSlice(tagValues),
+		},
+	}
+
+	inp := &ssm.CreateAssociationInput{
+		Name:    aws.String(docName),
+		Targets: targets,
+	}
+
+	out, err := s.Service.CreateAssociationWithContext(ctx, inp)
+	if err != nil {
+		return "", common.ErrCode("failed to create association", err)
+	}
+	log.Debugf("got output creating SSM Association: %+v", out)
+	return aws.StringValue(out.AssociationDescription.AssociationId), nil
+}
