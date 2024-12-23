@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/YaleSpinup/apierror v0.1.5
-	github.com/YaleSpinup/aws-go v0.2.5
+	github.com/YaleSpinup/aws-go v0.2.7
 	github.com/aws/amazon-ec2-instance-selector/v2 v2.4.1
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/google/uuid v1.6.0
