@@ -53,7 +53,7 @@ func (s *SSM) CreateAssociationByTag(ctx context.Context, tagKey string, tagValu
 	// Create the Targets structure
 	targets := []*ssm.Target{
 		{
-			Key:    aws.String(tagKey),
+			Key:    aws.String("tag:" + tagKey),
 			Values: aws.StringSlice(tagValues),
 		},
 	}
