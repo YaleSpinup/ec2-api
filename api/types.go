@@ -805,7 +805,9 @@ type Ec2InstanceStateChangeRequest struct {
 }
 
 type SSMAssociationRequest struct {
-	Document string `json:"document"`
+	Document  string   `json:"document"`
+	TagKey    string   `json:"tagKey"`
+	TagValues []string `json:"tagValues"`
 }
 
 type SsmCommandRequest struct {

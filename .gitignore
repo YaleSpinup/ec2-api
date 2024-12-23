@@ -7,3 +7,5 @@ vendor
 debug
 .idea/
 *.exe
+# Fresh
+tmp/runner-build

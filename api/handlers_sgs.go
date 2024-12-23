@@ -8,6 +8,7 @@ import (
 
 	"github.com/YaleSpinup/apierror"
 	"github.com/YaleSpinup/ec2-api/ec2"
+	"github.com/YaleSpinup/ec2-api/ssm"
 	"github.com/gorilla/mux"
 )
 
@@ -226,4 +227,70 @@ func (s *server) SecurityGroupDeleteHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	handleResponseOk(w, "OK")
+}
+
+func (s *server) SecurityGroupSSMAssociationHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+
+	req := &SSMAssociationRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		msg := fmt.Sprintf("cannot decode body into ssm create input %s", err)
+		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
+		return
+	}
+
+	// Check for missing values in request body
+	requiredFields := map[string]string{
+		"Document": req.Document,
+		"TagKey":   req.TagKey,
+	}
+	for field, value := range requiredFields {
+		if value == "" {
+			errMsg := fmt.Sprintf("%s is mandatory", field)
+			handleError(w, apierror.New(apierror.ErrBadRequest, errMsg, nil))
+			return
+		}
+	}
+	// Check if TagValues is nil or empty
+	if len(req.TagValues) == 0 {
+		errMsg := "TagValues is mandatory"
+		handleError(w, apierror.New(apierror.ErrBadRequest, errMsg, nil))
+		return
+	}
+
+	// Assume role in account
+	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
+	policy, err := ssmAssociationPolicy()
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	session, err := s.assumeRole(
+		r.Context(),
+		s.session.ExternalID,
+		role,
+		policy,
+		"arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess",
+		"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+	)
+	if err != nil {
+		msg := fmt.Sprintf("failed to assume role in account: %s", account)
+		handleError(w, apierror.New(apierror.ErrForbidden, msg, err))
+		return
+	}
+
+	service := ssm.New(
+		ssm.WithSession(session.Session),
+	)
+
+	out, err := service.CreateAssociationByTag(r.Context(), req.TagKey, req.TagValues, req.Document)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponseOk(w, out)
 }
