@@ -229,12 +229,12 @@ func (s *server) SecurityGroupDeleteHandler(w http.ResponseWriter, r *http.Reque
 	handleResponseOk(w, "OK")
 }
 
-func (s *server) SecurityGroupSSMAssociationHandler(w http.ResponseWriter, r *http.Request) {
+func (s *server) SSMAssociationByTagHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
 	account := s.mapAccountNumber(vars["account"])
 
-	req := &SSMAssociationRequest{}
+	req := &SSMAssociationByTagRequest{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		msg := fmt.Sprintf("cannot decode body into ssm create input %s", err)
 		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
@@ -242,20 +242,19 @@ func (s *server) SecurityGroupSSMAssociationHandler(w http.ResponseWriter, r *ht
 	}
 
 	// Check for missing values in request body
-	requiredFields := map[string]string{
-		"Document": req.Document,
-		"TagKey":   req.TagKey,
+	errMsg := ""
+	if req.Document == "" {
+		errMsg = fmt.Sprintf("document is mandatory")
 	}
-	for field, value := range requiredFields {
-		if value == "" {
-			errMsg := fmt.Sprintf("%s is mandatory", field)
-			handleError(w, apierror.New(apierror.ErrBadRequest, errMsg, nil))
-			return
+	if len(req.TagFilters) == 0 {
+		errMsg = fmt.Sprintf("tagFilters is mandatory")
+	}
+	for _, tagValues := range req.TagFilters {
+		if len(tagValues) == 0 {
+			errMsg = fmt.Sprintf("You are missing values for one of your tags")
 		}
 	}
-	// Check if TagValues is nil or empty
-	if len(req.TagValues) == 0 {
-		errMsg := "TagValues is mandatory"
+	if errMsg != "" {
 		handleError(w, apierror.New(apierror.ErrBadRequest, errMsg, nil))
 		return
 	}
@@ -286,7 +285,7 @@ func (s *server) SecurityGroupSSMAssociationHandler(w http.ResponseWriter, r *ht
 		ssm.WithSession(session.Session),
 	)
 
-	out, err := service.CreateAssociationByTag(r.Context(), req.TagKey, req.TagValues, req.Document)
+	out, err := service.CreateAssociationByTag(r.Context(), req.Name, req.Document, req.DocumentVersion, req.TagFilters, req.Parameters)
 	if err != nil {
 		handleError(w, err)
 		return

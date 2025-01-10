@@ -2,6 +2,7 @@ package ssm
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/YaleSpinup/apierror"
 	"github.com/YaleSpinup/ec2-api/common"
@@ -41,29 +42,54 @@ func (s *SSM) CreateAssociation(ctx context.Context, instanceId, docName string)
 	return aws.StringValue(out.AssociationDescription.AssociationId), nil
 }
 
-func (s *SSM) CreateAssociationByTag(ctx context.Context, tagKey string, tagValues []string, docName string) (string, error) {
-	// Check for missing values
-	if tagKey == "" || tagValues == nil {
-		return "", apierror.New(apierror.ErrBadRequest, "both tagKey and tagValues should be present", nil)
-	}
-	if docName == "" {
-		return "", apierror.New(apierror.ErrBadRequest, "docName should be present", nil)
-	}
-
+func (s *SSM) CreateAssociationByTag(ctx context.Context, associationName string, docName string, docVersion int, tagFilters map[string][]string, parameters map[string][]string) (string, error) {
 	// Create the Targets structure
-	targets := []*ssm.Target{
-		{
-			Key:    aws.String("tag:" + tagKey),
-			Values: aws.StringSlice(tagValues),
-		},
+	targets := []*ssm.Target{}
+	for tagKey, tagValues := range tagFilters {
+		if tagKey == "" {
+			return "", apierror.New(apierror.ErrBadRequest, "tag key cannot be empty", nil)
+		}
+		targets = append(targets,
+			&ssm.Target{
+				Key:    aws.String("tag:" + tagKey),
+				Values: aws.StringSlice(tagValues),
+			},
+		)
 	}
 
-	inp := &ssm.CreateAssociationInput{
+	// Create the input
+	input := &ssm.CreateAssociationInput{
 		Name:    aws.String(docName),
 		Targets: targets,
 	}
 
-	out, err := s.Service.CreateAssociationWithContext(ctx, inp)
+	// Optionally add fields if present
+	// Handle optoinal association name
+	if associationName != "" {
+		input.AssociationName = aws.String(associationName)
+	}
+	// Handle optional document version
+	if docVersion != 0 {
+		input.DocumentVersion = aws.String(strconv.Itoa(docVersion))
+	} else {
+		input.DocumentVersion = aws.String("$DEFAULT")
+	}
+	// Handle optional parameters
+	if len(parameters) > 0 {
+		// Conver the parameters from map[string][]string to map[string][]*string
+		awsParams := make(map[string][]*string)
+		for key, values := range parameters {
+			// Convert each string in the slice to *string
+			var awsValues []*string
+			for _, val := range values {
+				awsValues = append(awsValues, aws.String(val))
+			}
+			awsParams[key] = awsValues
+		}
+		input.Parameters = awsParams
+	}
+
+	out, err := s.Service.CreateAssociationWithContext(ctx, input)
 	if err != nil {
 		return "", common.ErrCode("failed to create association", err)
 	}
