@@ -94,5 +94,6 @@ func (s *SSM) CreateAssociationByTag(ctx context.Context, associationName string
 		return "", common.ErrCode("failed to create association", err)
 	}
 	log.Debugf("got output creating SSM Association: %+v", out)
+	log.Info("created association with id: ", aws.StringValue(out.AssociationDescription.AssociationId))
 	return aws.StringValue(out.AssociationDescription.AssociationId), nil
 }
