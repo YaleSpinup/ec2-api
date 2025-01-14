@@ -1,9 +1,8 @@
-// In ssm/managedinstance.go
-
 package ssm
 
 import (
 	"context"
+	"regexp"
 
 	"github.com/YaleSpinup/apierror"
 	"github.com/YaleSpinup/ec2-api/common"
@@ -24,24 +23,29 @@ type ManagedInstance struct {
 	AgentVersion *string `json:"agentVersion"`
 }
 
+// managedInstanceFilter creates a StringFilter for managed instances
+func managedInstanceFilter() *ssm.InstanceInformationStringFilter {
+	return &ssm.InstanceInformationStringFilter{
+		Key: aws.String("ResourceType"),
+		Values: []*string{
+			aws.String("ManagedInstance"),
+		},
+	}
+}
+
 // ListManagedInstances lists hybrid instances from SSM Fleet Manager
 func (s *SSM) ListManagedInstances(ctx context.Context, per int64, next *string) ([]*ManagedInstance, *string, error) {
 	if per < 1 || per > 50 {
 		return nil, nil, apierror.New(apierror.ErrBadRequest, "per page must be between 1 and 50", nil)
 	}
 
-	log.Infof("listing managed instances from SSM")
+	log.Info("listing managed instances from SSM")
 
 	input := &ssm.DescribeInstanceInformationInput{
 		MaxResults: aws.Int64(per),
 		NextToken:  next,
 		Filters: []*ssm.InstanceInformationStringFilter{
-			{
-				Key: aws.String("ResourceType"),
-				Values: []*string{
-					aws.String("ManagedInstance"),
-				},
-			},
+			managedInstanceFilter(),
 		},
 	}
 
@@ -54,64 +58,80 @@ func (s *SSM) ListManagedInstances(ctx context.Context, per int64, next *string)
 
 	instances := make([]*ManagedInstance, 0, len(out.InstanceInformationList))
 	for _, info := range out.InstanceInformationList {
-		instance := &ManagedInstance{
-			InstanceId:   info.InstanceId,
-			Name:         info.Name,
-			PingStatus:   info.PingStatus,
-			PlatformType: info.PlatformType,
-			ResourceType: info.ResourceType,
-			ComputerName: info.ComputerName,
-			IPAddress:    info.IPAddress,
-			AgentVersion: info.AgentVersion,
-		}
-		instances = append(instances, instance)
+		instances = append(instances, convertToManagedInstance(info))
 	}
 
 	return instances, out.NextToken, nil
 }
 
-// GetManagedInstance gets details about a specific managed instance
-func (s *SSM) GetManagedInstance(ctx context.Context, instanceId string) (*ManagedInstance, error) {
-	if instanceId == "" {
-		return nil, apierror.New(apierror.ErrBadRequest, "instance id is required", nil)
+// GetManagedInstance gets details about a specific managed instance by ID or computer name
+func (s *SSM) GetManagedInstance(ctx context.Context, identifier string) (*ManagedInstance, error) {
+	if identifier == "" {
+		return nil, apierror.New(apierror.ErrBadRequest, "identifier (instance id or computer name) is required", nil)
 	}
 
-	log.Infof("getting managed instance details for %s", instanceId)
+	log.Infof("getting managed instance details for identifier: %s", identifier)
 
-	input := &ssm.DescribeInstanceInformationInput{
-		Filters: []*ssm.InstanceInformationStringFilter{
+	// Check if the identifier matches managed instance ID pattern (mi-xxxxxxxxxxxxxxxxx)
+	if matched, _ := regexp.MatchString(`^mi-\w{17}$`, identifier); matched {
+		// If it's an instance ID, use direct filter
+		filters := []*ssm.InstanceInformationStringFilter{
+			managedInstanceFilter(),
 			{
-				Key: aws.String("InstanceIds"),
+				Key: aws.String("InstanceId"),
 				Values: []*string{
-					aws.String(instanceId),
+					aws.String(identifier),
 				},
 			},
-			{
-				Key: aws.String("ResourceType"),
-				Values: []*string{
-					aws.String("ManagedInstance"),
-				},
-			},
-		},
+		}
+
+		input := &ssm.DescribeInstanceInformationInput{
+			Filters: filters,
+		}
+
+		out, err := s.Service.DescribeInstanceInformationWithContext(ctx, input)
+		if err != nil {
+			return nil, common.ErrCode("getting managed instance", err)
+		}
+
+		if len(out.InstanceInformationList) == 0 {
+			return nil, apierror.New(apierror.ErrNotFound, "managed instance not found", nil)
+		}
+
+		if len(out.InstanceInformationList) > 1 {
+			return nil, apierror.New(apierror.ErrBadRequest, "multiple instances found", nil)
+		}
+
+		return convertToManagedInstance(out.InstanceInformationList[0]), nil
 	}
 
-	out, err := s.Service.DescribeInstanceInformationWithContext(ctx, input)
+	// If not an instance ID, assume it's a computer name and list all instances
+	instances, _, err := s.ListManagedInstances(ctx, 50, nil)
 	if err != nil {
-		return nil, common.ErrCode("getting managed instance", err)
+		return nil, err
 	}
 
-	log.Debugf("got output from managed instance get: %+v", out)
+	var matches []*ManagedInstance
+	for _, instance := range instances {
+		if aws.StringValue(instance.ComputerName) == identifier {
+			matches = append(matches, instance)
+		}
+	}
 
-	if len(out.InstanceInformationList) == 0 {
+	if len(matches) == 0 {
 		return nil, apierror.New(apierror.ErrNotFound, "managed instance not found", nil)
 	}
 
-	if len(out.InstanceInformationList) > 1 {
-		return nil, apierror.New(apierror.ErrBadRequest, "multiple instances found", nil)
+	if len(matches) > 1 {
+		return nil, apierror.New(apierror.ErrBadRequest, "multiple instances found with same computer name", nil)
 	}
 
-	info := out.InstanceInformationList[0]
-	instance := &ManagedInstance{
+	return matches[0], nil
+}
+
+// Helper function to convert SSM instance info to our ManagedInstance type
+func convertToManagedInstance(info *ssm.InstanceInformation) *ManagedInstance {
+	return &ManagedInstance{
 		InstanceId:   info.InstanceId,
 		Name:         info.Name,
 		PingStatus:   info.PingStatus,
@@ -121,6 +141,4 @@ func (s *SSM) GetManagedInstance(ctx context.Context, instanceId string) (*Manag
 		IPAddress:    info.IPAddress,
 		AgentVersion: info.AgentVersion,
 	}
-
-	return instance, nil
 }

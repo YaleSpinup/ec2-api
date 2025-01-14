@@ -7,3 +7,7 @@ vendor
 debug
 .idea/
 *.exe
+control.json
+deco.json
+decofile-prod.json
+docker-compose.yml

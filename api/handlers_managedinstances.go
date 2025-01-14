@@ -75,12 +75,12 @@ func (s *server) GetManagedInstanceHandler(w http.ResponseWriter, r *http.Reques
 	w = LogWriter{w}
 	vars := mux.Vars(r)
 	account := s.mapAccountNumber(vars["account"])
-	instanceID := vars["id"]
+	identifier := vars["id"]
 
-	log.Infof("getting managed instance %s in account: %s", instanceID, account)
+	log.Infof("getting managed instance with identifier %s in account: %s", identifier, account)
 
-	if instanceID == "" {
-		handleError(w, apierror.New(apierror.ErrBadRequest, "instance_id is required", nil))
+	if identifier == "" {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "identifier (instance_id or computer_name) is required", nil))
 		return
 	}
 
@@ -102,7 +102,7 @@ func (s *server) GetManagedInstanceHandler(w http.ResponseWriter, r *http.Reques
 		ssm.WithSession(session.Session),
 	)
 
-	instance, err := service.GetManagedInstance(r.Context(), instanceID)
+	instance, err := service.GetManagedInstance(r.Context(), identifier)
 	if err != nil {
 		handleError(w, err)
 		return
