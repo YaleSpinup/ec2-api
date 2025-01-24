@@ -82,9 +82,13 @@ func (o *ec2Orchestrator) updateSecurityGroup(ctx context.Context, id string, re
 	}
 
 	log.Debugf("got request to update security group %s: %s", id, awsutil.Prettify(req))
+	log.Debugf("updateSecurityGroup prefix_list_id value: %v", req.PrefixListId)
 
 	switch *req.Action {
 	case "add":
+		permissions := ipPermissionsFromRequest(req)
+		log.Debugf("Generated permissions array length: %d", len(permissions))
+		log.Debugf("Generated permissions detail: %+v", awsutil.Prettify(permissions))
 		if err := o.ec2Client.AuthorizeSecurityGroup(ctx, *req.RuleType, id, ipPermissionsFromRequest(req)); err != nil {
 			return err
 		}

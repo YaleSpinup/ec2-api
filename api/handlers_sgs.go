@@ -6,9 +6,14 @@ import (
 	"net/http"
 	"strconv"
 
+	"bytes"
+	"io"
+
 	"github.com/YaleSpinup/apierror"
 	"github.com/YaleSpinup/ec2-api/ec2"
+	"github.com/aws/aws-sdk-go/aws/awsutil"
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 )
 
 func (s *server) SecurityGroupCreateHandler(w http.ResponseWriter, r *http.Request) {
@@ -56,12 +61,18 @@ func (s *server) SecurityGroupUpdateHandler(w http.ResponseWriter, r *http.Reque
 	account := s.mapAccountNumber(vars["account"])
 	id := vars["id"]
 
+	// Log raw request body
+	body, _ := io.ReadAll(r.Body)
+	log.Debugf("Raw request body: %s", string(body))
+	r.Body = io.NopCloser(bytes.NewBuffer(body)) // Reset body for later reading
+
 	req := &Ec2SecurityGroupRuleRequest{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		handleError(w, err)
 		return
 	}
 
+	log.Debugf("SecurityGroupUpdateHandler received request: %+v", awsutil.Prettify(req))
 	if (req.Tags != nil) == (req.RuleType != nil) {
 		handleError(w, apierror.New(apierror.ErrBadRequest, "request should either update tags or modify security group", nil))
 		return
