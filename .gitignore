@@ -11,6 +11,3 @@ control.json
 deco.json
 decofile-prod.json
 docker-compose.yml
-
-# For fresh
-tmp
