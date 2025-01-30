@@ -2,6 +2,7 @@ package ssm
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/YaleSpinup/apierror"
 	"github.com/YaleSpinup/ec2-api/common"
@@ -38,5 +39,61 @@ func (s *SSM) CreateAssociation(ctx context.Context, instanceId, docName string)
 		return "", common.ErrCode("failed to create association", err)
 	}
 	log.Debugf("got output creating SSM Association: %+v", out)
+	return aws.StringValue(out.AssociationDescription.AssociationId), nil
+}
+
+func (s *SSM) CreateAssociationByTag(ctx context.Context, associationName string, docName string, docVersion int, tagFilters map[string][]string, parameters map[string][]string) (string, error) {
+	// Create the Targets structure
+	targets := []*ssm.Target{}
+	for tagKey, tagValues := range tagFilters {
+		if tagKey == "" {
+			return "", apierror.New(apierror.ErrBadRequest, "tag key cannot be empty", nil)
+		}
+		targets = append(targets,
+			&ssm.Target{
+				Key:    aws.String("tag:" + tagKey),
+				Values: aws.StringSlice(tagValues),
+			},
+		)
+	}
+
+	// Create the input
+	input := &ssm.CreateAssociationInput{
+		Name:    aws.String(docName),
+		Targets: targets,
+	}
+
+	// Optionally add fields if present
+	// Handle optoinal association name
+	if associationName != "" {
+		input.AssociationName = aws.String(associationName)
+	}
+	// Handle optional document version
+	if docVersion != 0 {
+		input.DocumentVersion = aws.String(strconv.Itoa(docVersion))
+	} else {
+		input.DocumentVersion = aws.String("$DEFAULT")
+	}
+	// Handle optional parameters
+	if len(parameters) > 0 {
+		// Conver the parameters from map[string][]string to map[string][]*string
+		awsParams := make(map[string][]*string)
+		for key, values := range parameters {
+			// Convert each string in the slice to *string
+			var awsValues []*string
+			for _, val := range values {
+				awsValues = append(awsValues, aws.String(val))
+			}
+			awsParams[key] = awsValues
+		}
+		input.Parameters = awsParams
+	}
+
+	out, err := s.Service.CreateAssociationWithContext(ctx, input)
+	if err != nil {
+		return "", common.ErrCode("failed to create association", err)
+	}
+	log.Debugf("got output creating SSM Association: %+v", out)
+	log.Info("created association with id: ", aws.StringValue(out.AssociationDescription.AssociationId))
 	return aws.StringValue(out.AssociationDescription.AssociationId), nil
 }

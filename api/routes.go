@@ -65,6 +65,7 @@ func (s *server) routes() {
 	api.HandleFunc("/{account}/instances", s.InstanceCreateHandler).Methods(http.MethodPost)
 	api.HandleFunc("/{account}/instances/{id}/volumes", s.VolumeAttachHandler).Methods(http.MethodPost)
 	api.HandleFunc("/{account}/sgs", s.SecurityGroupCreateHandler).Methods(http.MethodPost)
+	api.HandleFunc("/{account}/ssm/association", s.SSMAssociationByTagHandler).Methods(http.MethodPost)
 	api.HandleFunc("/{account}/volumes", s.VolumeCreateHandler).Methods(http.MethodPost)
 	api.HandleFunc("/{account}/snapshots", s.SnapshotCreateHandler).Methods(http.MethodPost)
 	api.HandleFunc("/{account}/images", s.ImageCreateHandler).Methods(http.MethodPost)

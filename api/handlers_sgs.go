@@ -8,6 +8,7 @@ import (
 
 	"github.com/YaleSpinup/apierror"
 	"github.com/YaleSpinup/ec2-api/ec2"
+	"github.com/YaleSpinup/ec2-api/ssm"
 	"github.com/gorilla/mux"
 )
 
@@ -226,4 +227,69 @@ func (s *server) SecurityGroupDeleteHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	handleResponseOk(w, "OK")
+}
+
+func (s *server) SSMAssociationByTagHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+
+	req := &SSMAssociationByTagRequest{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		msg := fmt.Sprintf("cannot decode body into ssm create input %s", err)
+		handleError(w, apierror.New(apierror.ErrBadRequest, msg, err))
+		return
+	}
+
+	// Check for missing values in request body
+	errMsg := ""
+	if req.Document == "" {
+		errMsg = fmt.Sprintf("document is mandatory")
+	}
+	if len(req.TagFilters) == 0 {
+		errMsg = fmt.Sprintf("tagFilters is mandatory")
+	}
+	for _, tagValues := range req.TagFilters {
+		if len(tagValues) == 0 {
+			errMsg = fmt.Sprintf("You are missing values for one of your tags")
+		}
+	}
+	if errMsg != "" {
+		handleError(w, apierror.New(apierror.ErrBadRequest, errMsg, nil))
+		return
+	}
+
+	// Assume role in account
+	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
+	policy, err := ssmAssociationPolicy()
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	session, err := s.assumeRole(
+		r.Context(),
+		s.session.ExternalID,
+		role,
+		policy,
+		"arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess",
+		"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+	)
+	if err != nil {
+		msg := fmt.Sprintf("failed to assume role in account: %s", account)
+		handleError(w, apierror.New(apierror.ErrForbidden, msg, err))
+		return
+	}
+
+	service := ssm.New(
+		ssm.WithSession(session.Session),
+	)
+
+	out, err := service.CreateAssociationByTag(r.Context(), req.Name, req.Document, req.DocumentVersion, req.TagFilters, req.Parameters)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponseOk(w, out)
 }

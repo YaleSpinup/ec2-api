@@ -2,8 +2,9 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/aws/aws-sdk-go/service/iam"
 	"time"
+
+	"github.com/aws/aws-sdk-go/service/iam"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awsutil"
@@ -806,6 +807,14 @@ type Ec2InstanceStateChangeRequest struct {
 
 type SSMAssociationRequest struct {
 	Document string `json:"document"`
+}
+
+type SSMAssociationByTagRequest struct {
+	Name            string              `json:"name"`
+	Document        string              `json:"document"`
+	DocumentVersion int                 `json:"documentVersion"`
+	TagFilters      map[string][]string `json:"tagFilters"`
+	Parameters      map[string][]string `json:"parameters"`
 }
 
 type SsmCommandRequest struct {
