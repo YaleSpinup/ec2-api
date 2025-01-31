@@ -46,6 +46,23 @@ var (
 	version        = flag.Bool("version", false, "Display version information and exit.")
 )
 
+// @title						Spinup - EC2 API
+// @version						0.29.4
+// @description					This is a swagger implementation for the Spinup EC2 API.
+
+// @contact.name				Brandon Tassone
+// @contact.url					https://yale.service-now.com/
+// @contact.email				cloudeng@yale.edu
+
+// @host						localhost:8180
+// @BasePath					/v2/ec2
+
+// @securityDefinitions.apikey	ApiKeyAuth
+// @in							header
+// @name						X-Auth-Token
+// @description					Hashed token authentication that gets passed along with the request.
+
+// @Security 					ApiKeyAuth
 func main() {
 	flag.Parse()
 	if *version {
@@ -83,7 +100,12 @@ func main() {
 
 	if config.LogLevel == "debug" {
 		log.Debug("Starting profiler on 127.0.0.1:6080")
-		go http.ListenAndServe("127.0.0.1:6080", nil)
+		go func() {
+			err := http.ListenAndServe("127.0.0.1:6080", nil)
+			if err != nil {
+
+			}
+		}()
 	}
 	log.Debugf("loaded configuration: %+v", config)
 

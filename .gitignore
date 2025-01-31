@@ -13,3 +13,4 @@ decofile-prod.json
 docker-compose.yml
 # Fresh
 tmp/runner-build
+./docs/*
