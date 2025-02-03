@@ -22,7 +22,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 
@@ -46,23 +45,6 @@ var (
 	version        = flag.Bool("version", false, "Display version information and exit.")
 )
 
-// @title						Spinup - EC2 API
-// @version						0.29.4
-// @description					This is a swagger implementation for the Spinup EC2 API.
-
-// @contact.name				Brandon Tassone
-// @contact.url					https://yale.service-now.com/
-// @contact.email				cloudeng@yale.edu
-
-// @host						localhost:8180
-// @BasePath					/v2/ec2
-
-// @securityDefinitions.apikey	ApiKeyAuth
-// @in							header
-// @name						X-Auth-Token
-// @description					Hashed token authentication that gets passed along with the request.
-
-// @Security 					ApiKeyAuth
 func main() {
 	flag.Parse()
 	if *version {
@@ -134,9 +116,9 @@ func configReader() io.Reader {
 		log.Fatalln("unable to open config file", err)
 	}
 
-	c, err := ioutil.ReadAll(configFile)
-	if err != nil {
-		log.Fatalln("unable to read config file", err)
+	c, rErr := io.ReadAll(configFile)
+	if rErr != nil {
+		log.Fatalln("unable to read config file", rErr)
 	}
 
 	return bytes.NewReader(c)
