@@ -22,7 +22,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 
@@ -83,7 +82,12 @@ func main() {
 
 	if config.LogLevel == "debug" {
 		log.Debug("Starting profiler on 127.0.0.1:6080")
-		go http.ListenAndServe("127.0.0.1:6080", nil)
+		go func() {
+			err := http.ListenAndServe("127.0.0.1:6080", nil)
+			if err != nil {
+
+			}
+		}()
 	}
 	log.Debugf("loaded configuration: %+v", config)
 
@@ -112,9 +116,9 @@ func configReader() io.Reader {
 		log.Fatalln("unable to open config file", err)
 	}
 
-	c, err := ioutil.ReadAll(configFile)
-	if err != nil {
-		log.Fatalln("unable to read config file", err)
+	c, rErr := io.ReadAll(configFile)
+	if rErr != nil {
+		log.Fatalln("unable to read config file", rErr)
 	}
 
 	return bytes.NewReader(c)

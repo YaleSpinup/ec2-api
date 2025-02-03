@@ -25,7 +25,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// PingHandler responds to ping requests
+// PingHandler Ping Returns a response of pong if the application is up and running
 func (s *server) PingHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	log.Debug("Ping/Pong")
