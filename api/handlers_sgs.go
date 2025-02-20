@@ -229,11 +229,22 @@ func (s *server) SecurityGroupDeleteHandler(w http.ResponseWriter, r *http.Reque
 	handleResponseOk(w, "OK")
 }
 
+// SSMAssociationByTagHandler handler function for creating an ssm association in aws by tag targets
+// 1. Get the vars and account id
+// 2. Decode the request
+// 3. Check for missing values in the request body
+// 4. Construct the role arn to assume in the session
+// 5. Get the policy required for creating the ssm association via the session
+// 6. Create the session required to access aws
+// 7. Create the ssm service that houses the repository calls for creating the association by tag targets
+// 8. Call the underlying service
+// 9. Return the created association id
 func (s *server) SSMAssociationByTagHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
 	account := s.mapAccountNumber(vars["account"])
 
+	// decode the request
 	req := &SSMAssociationByTagRequest{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		msg := fmt.Sprintf("cannot decode body into ssm create input %s", err)
@@ -259,15 +270,18 @@ func (s *server) SSMAssociationByTagHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Assume role in account
+	// construct the role arn by name in the account
 	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
-	policy, err := ssmAssociationPolicy()
-	if err != nil {
-		handleError(w, err)
+
+	// get the ssm association policy for creating the association
+	policy, pErr := ssmAssociationPolicy()
+	if pErr != nil {
+		handleError(w, pErr)
 		return
 	}
 
-	session, err := s.assumeRole(
+	// create the session
+	session, sErr := s.assumeRole(
 		r.Context(),
 		s.session.ExternalID,
 		role,
@@ -275,9 +289,9 @@ func (s *server) SSMAssociationByTagHandler(w http.ResponseWriter, r *http.Reque
 		"arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess",
 		"arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
 	)
-	if err != nil {
+	if sErr != nil {
 		msg := fmt.Sprintf("failed to assume role in account: %s", account)
-		handleError(w, apierror.New(apierror.ErrForbidden, msg, err))
+		handleError(w, apierror.New(apierror.ErrForbidden, msg, sErr))
 		return
 	}
 
@@ -285,9 +299,9 @@ func (s *server) SSMAssociationByTagHandler(w http.ResponseWriter, r *http.Reque
 		ssm.WithSession(session.Session),
 	)
 
-	out, err := service.CreateAssociationByTag(r.Context(), req.Name, req.Document, req.DocumentVersion, req.TagFilters, req.Parameters)
-	if err != nil {
-		handleError(w, err)
+	out, cErr := service.CreateAssociationByTag(r.Context(), req.Name, req.Document, req.DocumentVersion, req.ScheduleExpression, req.ScheduleOffset, req.TagFilters, req.Parameters)
+	if cErr != nil {
+		handleError(w, cErr)
 		return
 	}
 
