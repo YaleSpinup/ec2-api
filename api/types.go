@@ -810,11 +810,13 @@ type SSMAssociationRequest struct {
 }
 
 type SSMAssociationByTagRequest struct {
-	Name            string              `json:"name"`
-	Document        string              `json:"document"`
-	DocumentVersion int                 `json:"documentVersion"`
-	TagFilters      map[string][]string `json:"tagFilters"`
-	Parameters      map[string][]string `json:"parameters"`
+	Name               string              `json:"name"`
+	Document           string              `json:"document"`
+	DocumentVersion    int                 `json:"documentVersion"`
+	ScheduleExpression string              `json:"scheduleExpression"`
+	ScheduleOffset     int                 `json:"scheduleOffset"`
+	TagFilters         map[string][]string `json:"tagFilters"`
+	Parameters         map[string][]string `json:"parameters"`
 }
 
 type SsmCommandRequest struct {

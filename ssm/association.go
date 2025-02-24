@@ -42,9 +42,18 @@ func (s *SSM) CreateAssociation(ctx context.Context, instanceId, docName string)
 	return aws.StringValue(out.AssociationDescription.AssociationId), nil
 }
 
-func (s *SSM) CreateAssociationByTag(ctx context.Context, associationName string, docName string, docVersion int, tagFilters map[string][]string, parameters map[string][]string) (string, error) {
+// CreateAssociationByTag create a ssm association by tag targets
+// 1. Create the targets structure
+// 2. Create required association input
+// 3. Handle optional association name
+// 4. Handle optional document version
+// 5. Handle optional schedule
+// 6. Handle optional parameters
+// 7. Create the ssm association with the created input
+// 8. Return the association id of the created association
+func (s *SSM) CreateAssociationByTag(ctx context.Context, associationName string, docName string, docVersion int, scheduleExpression string, scheduleOffset int, tagFilters map[string][]string, parameters map[string][]string) (string, error) {
 	// Create the Targets structure
-	targets := []*ssm.Target{}
+	var targets []*ssm.Target
 	for tagKey, tagValues := range tagFilters {
 		if tagKey == "" {
 			return "", apierror.New(apierror.ErrBadRequest, "tag key cannot be empty", nil)
@@ -63,20 +72,29 @@ func (s *SSM) CreateAssociationByTag(ctx context.Context, associationName string
 		Targets: targets,
 	}
 
-	// Optionally add fields if present
-	// Handle optoinal association name
+	// Handle optional association name
 	if associationName != "" {
 		input.AssociationName = aws.String(associationName)
 	}
+
 	// Handle optional document version
 	if docVersion != 0 {
 		input.DocumentVersion = aws.String(strconv.Itoa(docVersion))
 	} else {
 		input.DocumentVersion = aws.String("$DEFAULT")
 	}
+
+	// Handle optional schedule
+	if scheduleExpression != "" {
+		input.ScheduleExpression = aws.String(scheduleExpression)
+		if scheduleOffset != 0 {
+			input.ScheduleOffset = aws.Int64(int64(scheduleOffset))
+		}
+	}
+
 	// Handle optional parameters
 	if len(parameters) > 0 {
-		// Conver the parameters from map[string][]string to map[string][]*string
+		// Convert the parameters from map[string][]string to map[string][]*string
 		awsParams := make(map[string][]*string)
 		for key, values := range parameters {
 			// Convert each string in the slice to *string
@@ -89,10 +107,13 @@ func (s *SSM) CreateAssociationByTag(ctx context.Context, associationName string
 		input.Parameters = awsParams
 	}
 
+	// create the ssm association in aws
 	out, err := s.Service.CreateAssociationWithContext(ctx, input)
 	if err != nil {
 		return "", common.ErrCode("failed to create association", err)
 	}
+
+	// return the association id
 	log.Debugf("got output creating SSM Association: %+v", out)
 	log.Info("created association with id: ", aws.StringValue(out.AssociationDescription.AssociationId))
 	return aws.StringValue(out.AssociationDescription.AssociationId), nil
