@@ -19,6 +19,7 @@ package api
 import (
 	"context"
 	"errors"
+	"github.com/YaleSpinup/ec2-api/resourcegroups"
 	"math/rand"
 	"net/http"
 	"os"
@@ -54,15 +55,16 @@ type proxyBackend struct {
 }
 
 type server struct {
-	router       *mux.Router
-	version      *apiVersion
-	context      context.Context
-	session      session.Session
-	sessionCache *cache.Cache
-	backend      *proxyBackend
-	accountsMap  map[string]string
-	orgPolicy    string
-	org          string
+	router         *mux.Router
+	version        *apiVersion
+	context        context.Context
+	session        session.Session
+	sessionCache   *cache.Cache
+	backend        *proxyBackend
+	accountsMap    map[string]string
+	orgPolicy      string
+	org            string
+	resourceGroups *resourcegroups.ResourceGroups
 }
 
 // NewServer creates a new server and starts it
@@ -118,7 +120,6 @@ func NewServer(config common.Config) error {
 		"/v2/ec2/version": "public",
 		"/v2/ec2/metrics": "public",
 	}
-
 	// load routes
 	s.routes()
 

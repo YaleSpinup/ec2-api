@@ -87,4 +87,3 @@ func (o *ec2Orchestrator) listSnapshots(ctx context.Context, perPage int64, page
 
 	return out.Snapshots, out.NextToken, nil
 }
-
