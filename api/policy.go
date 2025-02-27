@@ -76,12 +76,6 @@ func inlineBucketAccessPolicy(bucket string) (string, error) {
 					"s3:ListBucket",
 					"s3:DeleteObject",
 					"s3:GetBucketMetadataTableConfiguration",
-					"s3:GetBucketLocation",
-					"s3:PutObjectAcl",
-					"s3:GetObjectAcl",
-					"s3:ListMultipartUploadParts",
-					"s3:AbortMultipartUpload",
-					"s3:ListBucketMultipartUploads",
 				},
 				Resource: []string{
 					fmt.Sprintf("arn:aws:s3:::%s", bucket),
