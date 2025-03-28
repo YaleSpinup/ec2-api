@@ -41,6 +41,7 @@ func (s *server) routes() {
 
 	api.HandleFunc("/{account}/instances/{id}/ssm/command", s.InstanceGetCommandHandler).Methods(http.MethodGet).Queries("command_id", "{cid}")
 	api.HandleFunc("/{account}/instances/{id}/ssm/association", s.DescribeAssociationHandler).Methods(http.MethodGet).Queries("document", "{doc}")
+	api.HandleFunc("/{account}/instances/{id}/ssm/ready", s.InstanceSSMReadyCheckHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/ssm/managed-instances", s.ListManagedInstancesHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/ssm/managed-instances/{id}", s.GetManagedInstanceHandler).Methods(http.MethodGet)
 

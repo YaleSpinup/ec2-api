@@ -20,6 +20,7 @@ GET /v2/ec2/{account}/instances/{id}
 GET /v2/ec2/{account}/instances/{id}/volumes
 GET /v2/ec2/{account}/instances/{id}/volumes/{vid}
 GET /v2/ec2/{account}/instances/{id}/snapshots
+GET /v2/ec2/{account}/instances/{id}/ssm/ready
 POST /v2/ec2/{account}/instances
 POST /v2/ec2/{account}/instances/{id}/volumes
 PUT /v2/ec2/{account}/instances/{id}
@@ -76,14 +77,40 @@ GET /v2/ec2/{account}/vpcs/{id}
 DELETE /v2/ec2/{account}/instanceprofiles/{name}
 ```
 
+## SSM Readiness Check
+
+The SSM readiness check endpoint allows you to verify if an EC2 instance has the Systems Manager agent properly installed, configured, and connected.
+
+```
+GET /v2/ec2/{account}/instances/{id}/ssm/ready
+```
+
+### Parameters
+- `{account}`: AWS account ID or account alias
+- `{id}`: EC2 instance ID (e.g., 'i-12345678')
+
+### Response
+```json
+{
+  "instanceId": "i-1234567890abcdef0",
+  "ready": true
+}
+```
+
+### Response Codes
+- 200 OK: Request was successful (instance may or may not be ready)
+- 400 Bad Request: Invalid request parameters
+- 403 Forbidden: Authorization error
+- 500 Internal Server Error: Server error while processing the request
 
 ## Authentication
 
 Authentication is accomplished via an encrypted pre-shared key passed via the `X-Auth-Token` header.
 
-## Author
+## Authors
 
-E Camden Fisher <camden.fisher@yale.edu>
+E Camden Fisher <camden.fisher@yale.edu>  
+Brandon Tassone <brandon.tassone@yale.edu>
 
 ## License
 

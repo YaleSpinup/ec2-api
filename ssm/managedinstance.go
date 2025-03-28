@@ -3,6 +3,7 @@ package ssm
 import (
 	"context"
 	"regexp"
+	"strings"
 
 	"github.com/YaleSpinup/apierror"
 	"github.com/YaleSpinup/ec2-api/common"
@@ -141,4 +142,63 @@ func convertToManagedInstance(info *ssm.InstanceInformation) *ManagedInstance {
 		IPAddress:    info.IPAddress,
 		AgentVersion: info.AgentVersion,
 	}
+}
+
+// GetInstanceInformationWithFilters returns instance information filtered by the provided criteria
+func (s *SSM) GetInstanceInformationWithFilters(ctx context.Context, filters map[string]string) ([]*ssm.InstanceInformation, error) {
+	if filters == nil {
+		filters = make(map[string]string)
+	}
+
+	log.Infof("getting instance information with filters: %+v", filters)
+
+	input := &ssm.DescribeInstanceInformationInput{}
+	
+	// Convert filters to SSM filters format
+	ssmFilters := []*ssm.InstanceInformationStringFilter{}
+	
+	for key, value := range filters {
+		// Handle special case for InstanceIds which needs to be a comma-separated list
+		if key == "InstanceIds" && value != "" {
+			instanceIds := strings.Split(value, ",")
+			
+			// Skip if the list is empty
+			if len(instanceIds) == 0 {
+				continue
+			}
+			
+			// Convert to AWS string pointers
+			awsInstanceIds := make([]*string, len(instanceIds))
+			for i, id := range instanceIds {
+				awsInstanceIds[i] = aws.String(strings.TrimSpace(id))
+			}
+			
+			input.SetInstanceInformationFilterList([]*ssm.InstanceInformationFilter{
+				{
+					Key: aws.String("InstanceIds"),
+					ValueSet: awsInstanceIds,
+				},
+			})
+		} else if value != "" {
+			ssmFilters = append(ssmFilters, &ssm.InstanceInformationStringFilter{
+				Key: aws.String(key),
+				Values: []*string{
+					aws.String(value),
+				},
+			})
+		}
+	}
+	
+	if len(ssmFilters) > 0 {
+		input.SetFilters(ssmFilters)
+	}
+
+	output, err := s.Service.DescribeInstanceInformationWithContext(ctx, input)
+	if err != nil {
+		return nil, common.ErrCode("failed to get instance information", err)
+	}
+
+	log.Debugf("got output from SSM instance information: %+v", output)
+
+	return output.InstanceInformationList, nil
 }
