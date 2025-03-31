@@ -825,6 +825,29 @@ type SsmCommandRequest struct {
 	TimeoutSeconds *int64               `json:"timeout"`
 }
 
+type SSMParameterCreateRequest struct {
+	Name        *string           `json:"name"`
+	Type        *string           `json:"type"` // String, StringList, SecureString
+	Value       *string           `json:"value"`
+	Description *string           `json:"description,omitempty"`
+	KeyId       *string           `json:"key_id,omitempty"` // Optional KMS Key ID for SecureString
+	Tags        map[string]string `json:"tags,omitempty"`
+	Tier        *string           `json:"tier,omitempty"`      // Standard, Advanced, Intelligent-Tiering
+	Overwrite   *bool             `json:"overwrite,omitempty"` // Whether to overwrite if param exists
+}
+
+type SSMParameterResponse struct {
+	Name         string              `json:"name"`
+	Type         string              `json:"type"`
+	Version      int64               `json:"version"`
+	LastModified string              `json:"last_modified,omitempty"`
+	ARN          string              `json:"arn,omitempty"`
+	DataType     string              `json:"data_type,omitempty"`
+	Description  string              `json:"description,omitempty"`
+	Tier         string              `json:"tier,omitempty"`
+	Tags         []map[string]string `json:"tags,omitempty"`
+}
+
 type Ec2VolumeUpdateRequest struct {
 	Type *string            `json:"type"`
 	Size *int64             `json:"size"`
