@@ -73,9 +73,101 @@ GET /v2/ec2/{account}/subnets
 GET /v2/ec2/{account}/vpcs
 GET /v2/ec2/{account}/vpcs/{id}
 
+# Managing SSM Parameters
+GET /v2/ec2/{account}/ssm/parameters
+GET /v2/ec2/{account}/ssm/parameters/{name}
+POST /v2/ec2/{account}/ssm/parameters
+PUT /v2/ec2/{account}/ssm/parameters/{name}
+DELETE /v2/ec2/{account}/ssm/parameters/{name}
+
 # Miscellaneous Endpoints
 DELETE /v2/ec2/{account}/instanceprofiles/{name}
 ```
+
+## SSM Parameters
+
+The SSM parameter endpoints allow you to create, retrieve, update, and delete Systems Manager parameters.
+
+```
+# List parameters
+GET /v2/ec2/{account}/ssm/parameters
+
+# Get a specific parameter
+GET /v2/ec2/{account}/ssm/parameters/{name}
+
+# Create a parameter
+POST /v2/ec2/{account}/ssm/parameters
+
+# Update a parameter
+PUT /v2/ec2/{account}/ssm/parameters/{name}
+
+# Delete a parameter
+DELETE /v2/ec2/{account}/ssm/parameters/{name}
+```
+
+### Parameters
+
+- `{account}`: AWS account ID or account alias
+- `{name}`: Name of the SSM parameter (can include path, e.g., '/myapp/config/secret')
+
+### Query Parameters
+
+For GET /v2/ec2/{account}/ssm/parameters:
+
+- `name`: Filter by parameter name
+- `type`: Filter by parameter type
+- `path`: Filter by parameter path
+- `max_results`: Maximum number of results to return
+- `next_token`: Token for pagination
+
+For GET /v2/ec2/{account}/ssm/parameters/{name}:
+
+- `decrypt`: Set to 'true' to decrypt SecureString parameters (default: false)
+
+### Request Body (POST/PUT)
+
+```json
+{
+  "name": "MyParameter",
+  "type": "String",
+  "value": "parameter-value",
+  "description": "My parameter description",
+  "overwrite": false,
+  "tags": {
+    "Environment": "Production"
+  }
+}
+```
+
+Types supported:
+
+- `String`: Plain text string
+- `StringList`: Comma-separated list of strings
+- `SecureString`: Encrypted string using KMS
+
+### Response
+
+```json
+{
+  "name": "MyParameter",
+  "type": "String",
+  "value": "parameter-value",
+  "version": 1,
+  "lastModifiedDate": "2023-01-01T00:00:00Z",
+  "arn": "arn:aws:ssm:us-east-1:123456789012:parameter/MyParameter",
+  "tags": {
+    "Environment": "Production"
+  }
+}
+```
+
+### Response Codes
+
+- 200 OK: Request was successful
+- 400 Bad Request: Invalid request parameters
+- 403 Forbidden: Authorization error
+- 404 Not Found: Parameter not found
+- 500 Internal Server Error: Server error while processing the request
 
 ## SSM Readiness Check
 

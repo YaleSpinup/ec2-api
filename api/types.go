@@ -821,7 +821,7 @@ type SSMAssociationByTagRequest struct {
 
 type SsmCommandRequest struct {
 	DocumentName   string               `json:"document_name"`
-	Parameters     map[string][]*string `json:"parameters"`
+	Parameters     map[string][]*string `json:"parameters,omitempty"`
 	TimeoutSeconds *int64               `json:"timeout"`
 }
 
