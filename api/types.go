@@ -839,6 +839,7 @@ type SSMParameterCreateRequest struct {
 type SSMParameterResponse struct {
 	Name         string              `json:"name"`
 	Type         string              `json:"type"`
+	Value        string              `json:"value,omitempty"`
 	Version      int64               `json:"version"`
 	LastModified string              `json:"last_modified,omitempty"`
 	ARN          string              `json:"arn,omitempty"`

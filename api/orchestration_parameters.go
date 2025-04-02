@@ -297,6 +297,7 @@ func (o *ssmOrchestrator) getParameter(ctx context.Context, name string, withDec
 	response := &SSMParameterResponse{
 		Name:     aws.StringValue(getOutput.Parameter.Name),
 		Type:     aws.StringValue(getOutput.Parameter.Type),
+		Value:    aws.StringValue(getOutput.Parameter.Value),
 		Version:  aws.Int64Value(getOutput.Parameter.Version),
 		ARN:      aws.StringValue(getOutput.Parameter.ARN),
 		DataType: aws.StringValue(getOutput.Parameter.DataType),
