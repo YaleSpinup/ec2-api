@@ -322,7 +322,7 @@ func (o *ssmOrchestrator) getParameter(ctx context.Context, name string, withDec
 		// Try to get tags
 		tagOutput, tagErr := o.ssmClient.Service.ListTagsForResourceWithContext(ctx, &ssm.ListTagsForResourceInput{
 			ResourceType: aws.String("Parameter"),
-			ResourceId:   aws.String(name),
+			ResourceId:   aws.String(paramName),
 		})
 
 		if tagErr == nil && tagOutput.TagList != nil && len(tagOutput.TagList) > 0 {
