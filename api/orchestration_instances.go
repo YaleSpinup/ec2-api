@@ -127,10 +127,15 @@ func (o *ssmOrchestrator) sendInstancesCommand(ctx context.Context, req *SsmComm
 	log.Debugf("got request to send command: %s", awsutil.Prettify(req))
 	input := &ssm.SendCommandInput{
 		DocumentName:   aws.String(req.DocumentName),
-		Parameters:     req.Parameters,
 		TimeoutSeconds: req.TimeoutSeconds,
 		InstanceIds:    aws.StringSlice(id),
 	}
+
+	// Only set Parameters if provided
+	if req.Parameters != nil {
+		input.Parameters = req.Parameters
+	}
+
 	cmd, err := o.ssmClient.SendCommand(ctx, input)
 	if err != nil {
 		return "", err

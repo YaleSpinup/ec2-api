@@ -41,8 +41,11 @@ func (s *server) routes() {
 
 	api.HandleFunc("/{account}/instances/{id}/ssm/command", s.InstanceGetCommandHandler).Methods(http.MethodGet).Queries("command_id", "{cid}")
 	api.HandleFunc("/{account}/instances/{id}/ssm/association", s.DescribeAssociationHandler).Methods(http.MethodGet).Queries("document", "{doc}")
+	api.HandleFunc("/{account}/instances/{id}/ssm/ready", s.InstanceSSMReadyCheckHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/ssm/managed-instances", s.ListManagedInstancesHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/ssm/managed-instances/{id}", s.GetManagedInstanceHandler).Methods(http.MethodGet)
+	api.HandleFunc("/{account}/ssm/parameters", s.ParameterListHandler).Methods(http.MethodGet)
+	api.HandleFunc("/{account}/ssm/parameters/{name:.*}", s.ParameterGetHandler).Methods(http.MethodGet)
 
 	api.HandleFunc("/{account}/sgs", s.SecurityGroupListHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/sgs/{id}", s.SecurityGroupGetHandler).Methods(http.MethodGet)
@@ -69,6 +72,7 @@ func (s *server) routes() {
 	api.HandleFunc("/{account}/volumes", s.VolumeCreateHandler).Methods(http.MethodPost)
 	api.HandleFunc("/{account}/snapshots", s.SnapshotCreateHandler).Methods(http.MethodPost)
 	api.HandleFunc("/{account}/images", s.ImageCreateHandler).Methods(http.MethodPost)
+	api.HandleFunc("/{account}/ssm/parameters", s.ParameterCreateHandler).Methods(http.MethodPost)
 
 	api.HandleFunc("/{account}/images/{id}/tags", s.ImageUpdateHandler).Methods(http.MethodPut)
 	api.HandleFunc("/{account}/instances/{id}", s.NotImplementedHandler).Methods(http.MethodPut)
@@ -81,6 +85,7 @@ func (s *server) routes() {
 	api.HandleFunc("/{account}/sgs/{id}/tags", s.SecurityGroupUpdateHandler).Methods(http.MethodPut)
 	api.HandleFunc("/{account}/volumes/{id}", s.VolumeUpdateHandler).Methods(http.MethodPut)
 	api.HandleFunc("/{account}/volumes/{id}/tags", s.VolumeUpdateHandler).Methods(http.MethodPut)
+	api.HandleFunc("/{account}/ssm/parameters/{name:.*}", s.ParameterUpdateHandler).Methods(http.MethodPut)
 
 	api.HandleFunc("/{account}/instances/{id}", s.InstanceDeleteHandler).Methods(http.MethodDelete)
 	api.HandleFunc("/{account}/instances/{id}/volumes/{vid}", s.VolumeDetachHandler).Methods(http.MethodDelete)
@@ -91,4 +96,5 @@ func (s *server) routes() {
 	api.HandleFunc("/{account}/volumes/{id}", s.VolumeDeleteHandler).Methods(http.MethodDelete)
 	api.HandleFunc("/{account}/snapshots/{id}", s.SnapshotDeleteHandler).Methods(http.MethodDelete)
 	api.HandleFunc("/{account}/images/{id}", s.ImageDeleteHandler).Methods(http.MethodDelete)
+	api.HandleFunc("/{account}/ssm/parameters/{name:.*}", s.ParameterDeleteHandler).Methods(http.MethodDelete)
 }

@@ -15,6 +15,8 @@ type sessionParams struct {
 	policyArns   []string
 }
 
+// We're directly using the SSM struct instead of an interface
+
 type ec2Orchestrator struct {
 	ec2Client *ec2.Ec2
 	server    *server
