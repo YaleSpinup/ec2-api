@@ -59,6 +59,7 @@ type server struct {
 	context      context.Context
 	session      session.Session
 	sessionCache *cache.Cache
+	dataCache    *cache.Cache
 	backend      *proxyBackend
 	accountsMap  map[string]string
 	orgPolicy    string
@@ -80,6 +81,7 @@ func NewServer(config common.Config) error {
 		context:      ctx,
 		org:          config.Org,
 		sessionCache: cache.New(600*time.Second, 900*time.Second),
+		dataCache:    cache.New(24*time.Hour, 1*time.Hour),
 		accountsMap:  config.AccountsMap,
 	}
 

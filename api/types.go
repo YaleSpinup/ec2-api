@@ -801,6 +801,28 @@ func parseAssociationTargets(rawTgts []*ssm.Target) (tgts []AssociationTarget) {
 	return tgts
 }
 
+type InstanceTypeCatalogEntry struct {
+	Name              string               `json:"name"`
+	VCpu              int64                `json:"vcpu"`
+	MemoryMiB         int64                `json:"memory_mib"`
+	Architectures     []string             `json:"architectures"`
+	Processor         string               `json:"processor"`
+	Category          string               `json:"category"`
+	CurrentGeneration bool                 `json:"current_generation"`
+	BareMetal         bool                 `json:"bare_metal"`
+	Burstable         bool                 `json:"burstable"`
+	Gpu               *InstanceTypeGpuInfo `json:"gpu"`
+	SupportedAZs      []string             `json:"supported_azs"`
+}
+
+type InstanceTypeGpuInfo struct {
+	Count          int64  `json:"count"`
+	Name           string `json:"name"`
+	Manufacturer   string `json:"manufacturer"`
+	MemoryMiB      int64  `json:"memory_mib"`
+	TotalMemoryMiB int64  `json:"total_memory_mib"`
+}
+
 type Ec2InstanceStateChangeRequest struct {
 	State string `json:"state"`
 }

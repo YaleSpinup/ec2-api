@@ -31,6 +31,9 @@ func (s *server) routes() {
 	api.HandleFunc("/", s.AccountsHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/select", s.InstanceSelectorHandler).Methods(http.MethodGet)
 
+	// instance type catalog
+	api.HandleFunc("/{account}/instance-types", s.InstanceTypeCatalogHandler).Methods(http.MethodGet)
+
 	// instance endpoints
 	api.HandleFunc("/{account}/instances", s.InstanceListHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/instances/types", s.InstanceListTypeOfferings).Methods(http.MethodGet)
